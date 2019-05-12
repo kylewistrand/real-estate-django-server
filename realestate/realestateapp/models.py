@@ -9,34 +9,34 @@ class Neighborhood(models.Model):
     neighborhood_desc = models.TextField()
 
 class CouponType(models.Model):
-    couponTypeName = models.CharField(max_length=30)
-    couponTypeDescription = models.CharField(max_length=250)
+    couponTypeName = models.CharField(max_length=30, default="", unique=True, null=True)
+    couponTypeDescription = models.CharField(max_length=250, default="", unique=True, null=True)
 
 class Coupon(models.Model):
     couponType = models.ForeignKey(CouponType, on_delete=models.CASCADE)
-    couponValue = models.DecimalField(decimal_places=2, max_digits=3)
-    couponName = models.CharField(max_length=100)
-    couponDescription = models.CharField(max_length=250)
+    couponValue = models.DecimalField(decimal_places=2, max_digits=3, default=0, unique=True, null=False)
+    couponName = models.CharField(max_length=100, default="", unique=True, null=True)
+    couponDescription = models.CharField(max_length=250, default="", unique=True, null=True)
 
 class PropertyType(models.Model):
-    propertyTypeName = models.CharField(max_length=100)
-    propertyTypeDescription = models.CharField(max_length=512)
+    propertyTypeName = models.CharField(max_length=100, default="", unique=True, null=True)
+    propertyTypeDescription = models.CharField(max_length=512, default="", unique=True, null=True)
 
 class Property(models.Model):
     propertyType = models.ForeignKey(PropertyType, on_delete=models.CASCADE)
     neighborhood = models.ForeignKey(Neighborhood, on_delete=models.CASCADE)
-    propertyAddress = models.CharField(max_length=100)
+    propertyAddress = models.CharField(max_length=100, default="", unique=True, null=True)
     propertyCreatedDate = models.DateField()
-    propertyMarketPrice = models.DecimalField(decimal_places=2, max_digits=9)
-    propertyDescription = models.CharField(max_length=512)
-    propertySqFt = models.IntegerField()
-    propertyBedrooms = models.IntegerField()
-    propertyBathrooms = models.IntegerField()
+    propertyMarketPrice = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=True, null=True)
+    propertyDescription = models.CharField(max_length=512, default="", unique=True, null=True)
+    propertySqFt = models.PositiveSmallIntegerField(default=0, unique=True, null=False)
+    propertyBedrooms = models.PositiveSmallIntegerField(default=0, unique=True, null=False)
+    propertyBathrooms = models.PositiveSmallIntegerField(default=0, unique=True, null=False)
 
 class Offer(models.Model):
     propertyBuilding = models.ManyToManyField(Property)
     user = models.ManyToManyField(User)
-    offerAmount = models.DecimalField(decimal_places=2, max_digits=9)
+    offerAmount = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=True, null=False)
     offerDate = models.DateTimeField(datetime.datetime.now())
     #offerCounter
     #offerCounterDate
