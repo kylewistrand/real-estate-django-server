@@ -7,6 +7,16 @@
     <title>Document</title>
 </head>
 <body>
-    
+    <form method="post"> {% csrf_token %}
+        <input placeholder="Enter Username" id="username" type="text" name="username" value= "{{ username }}" >
+        <input placeholder="Enter Password" id="password" type="password" name="password" value= "{{ password }}" >
+        <input placeholder="Confirm password" id="passwordConf" type="password" name="passwordConf" value= "{{ passwordConf }}" >
+        <input placeholder="Enter Email" id="email" type="text" name="email" value= "{{ email }}" >
+        <input placeholder="Enter First Name" id="first_name" type="text" name="first_name" value= "{{ first_name }}" >
+        <input placeholder="Enter Last Name" id="last_name" type="text" name="last_name" value= "{{ last_name }}" >
+        <button type="submit" type="OK">Submit</button>
+    </form>
+
+
 </body>
 </html>

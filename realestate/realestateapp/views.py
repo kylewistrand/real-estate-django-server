@@ -5,7 +5,7 @@ Photo, Property_Photo, Amenity, Property_Amenity, Offer)
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate
 from .forms import RegistrationForm
 from django.views.decorators.debug import sensitive_post_parameters
 
@@ -31,7 +31,6 @@ def coupons(request):
 
 def register(request):
     "Registers a user"
-
     if request.method == 'GET':
         return render(request, 'auth/register.html', { })
 
@@ -62,42 +61,6 @@ def register(request):
         form = RegistrationForm      
         return HttpResponse("Method not allowed on /auth/register.(Method Not Allowed)", status=405)
 
-@sensitive_post_parameters('username', 'password')
-def signin(request):
-    """
-    If method is GET:
-        Returns sign in page
-    If method is POST:
-        Validates input, signs user in, and redirects to home.
-        If input is invalud, returns 400
-        If user doesn't exist, returns 401
-    If other method:
-        Returns status 405
-    """
-    if request.method == 'GET':
-        from realestateapp.forms import SigninForm
-        return render(request, 'auth/signin.html', {"signinForm" : SigninForm})
-    elif request.method == 'POST':
-        # Get POST parameters, clean them and save them as variables for readability
-        username = request.POST['username'].strip()
-        password = request.POST['password'].strip()
-
-        # Validate user input, otherwise return 400
-        if len(username) < 1 \
-            or len(password) < 1:
-            return HttpResponse("Bad login form.", status=400)
-        
-        # Authenticate user
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            # Respond after successful login
-            return HttpResponse("Login successful.", status=200)
-        else:
-            return HttpResponse("Invalid credentials.", status=401)
-    else:
-        # Unsupported method
-        return HttpResponse("Method not allowed on realestateapp/auth/signin.", status=405)
 
 @csrf_exempt
 def offers(request):
@@ -222,8 +185,8 @@ def coupon_with_id(request):
     
     if User.is_superuser():
         if request.method == "GET":
-            return NotImplemented
+            return HttpResponse("Got all coupons")
         if request.method == "POST":
-            return NotImplemented
+            return HttpResponse("Made a new coupon")
         if request.method == "DELETE":
-            return NotImplemented
+            return HttpResponse("Deleted a coupon")
