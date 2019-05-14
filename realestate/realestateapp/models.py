@@ -49,11 +49,11 @@ class Property(models.Model):
 
 class Offer(models.Model):
     propertyBuilding = models.ManyToManyField(Property)
-    user = models.ManyToManyField(User)
-    offerAmount = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=True, null=False)
+    user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
+    offerAmount = models.DecimalField(decimal_places=2, max_digits=12, default=0, null=False)
     offerDate = models.DateTimeField(datetime.datetime.now())
-    #offerCounter
-    #offerCounterDate
+    offerCounterAmount = models.DecimalField(decimal_places=2, max_digits=12, blank=True, null=True)
+    offerCounterDate = models.DateTimeField(blank=True, null=True)
 
 class Photo(models.Model):
     photo_id = models.AutoField(primary_key=True)

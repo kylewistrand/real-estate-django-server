@@ -1,10 +1,12 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-from .models import Coupon, CouponType
+from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
+Photo, Property_Photo, Amenity, Property_Amenity, Offer)
+from django.views.decorators.csrf import csrf_exempt
+import json
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from .forms import RegistrationForm
-from .models import Property
 from django.views.decorators.debug import sensitive_post_parameters
 
 # Create your views here.
@@ -96,6 +98,100 @@ def signin(request):
     else:
         # Unsupported method
         return HttpResponse("Method not allowed on realestateapp/auth/signin.", status=405)
+
+@csrf_exempt
+def offers(request):
+    """
+    If method is GET:
+        Validates that a user is properly authenticated
+        Returns a list of all current and past offers
+    If method is POST:
+        Validates that a user is properly authenticated
+        Makes an offer for a property
+        If input is invalud, returns 400
+    If method is PATCH:
+        Validates that a user is properly authenticated
+        Edit your own offer or create a counter offer
+    If other method:
+        Returns status 405
+    """
+    if not request.user.is_authenticated:
+        # User is not authenticated
+        return HttpResponseRedirect('auth/signin')
+    if request.method == 'GET':
+        offers = Offer.objects.all()
+        offersList = []
+        for offer in offers:
+            properties = offer.propertyBuilding.all()
+            propertiesList = []
+            if (request.user == offer.user_id):
+                for propertyBuilding in properties:
+                    propertyTemp ={
+                        "property_id": propertyBuilding.id,
+                        "propertyAddress": propertyBuilding.propertyAddress,
+                        "propertyCreatedDate": propertyBuilding.propertyCreatedDate,
+                        "propertyMarketPrice": propertyBuilding.propertyMarketPrice,
+                        "propertyDescription": propertyBuilding.propertyDescription,
+                        "propertySqFt": propertyBuilding.propertySqFt,
+                        "propertyBedrooms": propertyBuilding.propertyBedrooms,
+                        "propertyBathrooms": propertyBuilding.propertyBathrooms
+                    }
+                    propertiesList.append(propertyTemp)
+
+                offerTemp = {
+                    "offerAmount": offer.offerAmount,
+                    "offerDate": offer.offerDate,
+                    "offerCounterAmount": offer.offerCounterAmount,
+                    "offerCounterDate": offer.offerCounterDate,
+                    "properties": propertiesList
+                }
+                offersList.append(offerTemp)
+        return JsonResponse(offersList, safe=False, status=200)
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return HttpResponse("Error decoding JSON file.", status=400)
+        else:
+            try:
+                property_id = data['property_id']
+                if isinstance(property_id, int):
+                    properties = Property.objects.filter(pk=property_id)
+                else:
+                    properties = Property.objects.filter(pk__in=property_id)
+                    print(len(property_id), len(properties))
+                    if len(property_id) != len(properties):
+                        raise Exception('Mismatch between number of properties')
+            except:
+                return HttpResponse("property_id invalid", status=400) 
+            newOffer = Offer.objects.create(
+                offerAmount=data['offerAmount'],
+                offerDate=data['offerDate'],
+                user_id=request.user
+            )
+            newOffer.propertyBuilding.set(properties)
+            propertiesList = []
+            for propertyBuilding in newOffer.propertyBuilding.all():
+                propertyTemp ={
+                    "property_id": propertyBuilding.id,
+                    "propertyAddress": propertyBuilding.propertyAddress,
+                    "propertyCreatedDate": propertyBuilding.propertyCreatedDate,
+                    "propertyMarketPrice": propertyBuilding.propertyMarketPrice,
+                    "propertyDescription": propertyBuilding.propertyDescription,
+                    "propertySqFt": propertyBuilding.propertySqFt,
+                    "propertyBedrooms": propertyBuilding.propertyBedrooms,
+                    "propertyBathrooms": propertyBuilding.propertyBathrooms
+                }
+                propertiesList.append(propertyTemp)
+            offerJSON = {
+                "offerAmount":newOffer.offerAmount,
+                "offerDate":newOffer.offerDate,
+                "offerCounterAmount": newOffer.offerCounterAmount,
+                "offerCounterDate": newOffer.offerCounterDate,
+                "propertyBuilding": propertiesList,
+                "user_id":newOffer.user_id.id
+            }
+            return JsonResponse(offerJSON, status=200)
 
 def checkout(request):
     "Allows user to checkout items from their cart"
