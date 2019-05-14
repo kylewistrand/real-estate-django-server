@@ -89,27 +89,44 @@ def properties(request):
                 propertyT.propertyTypeDescription = data['propertyTypeDescription']
                 propertyT.save()
             except:
-                propertyT = PropertyType.objects.get(couponTypeName=data['propertyTypeName'])
+                propertyT = PropertyType.objects.get(propertyTypeName=data['propertyTypeName'])
             try:
+                print('0')
                 neighborhood = Neighborhood()
-                neighborhood.neighbordhood_name = data['NeighborhoodName']
-                neighborhood.neighbordhood_desc = data['NeighborhoodDescription']
+                print('1')
+                neighborhood.neighborhood_name = data['neighborhoodName']
+                print('2')
+                neighborhood.neighborhood_desc = data['neighborhoodDescription']
+                print('3')
                 neighborhood.save()
+                print('4')
             except:
-                neighborhood = neighborhood.objects.get(neighborhood_name=data['NeighborhoodName'])
+                neighborhood = neighborhood.objects.get(neighborhood_name=data['neighborhoodName'])
+                print('test')
             propTemp = Property()
+            print('5')
             propTemp.neighborhood = neighborhood
+            print('6')
             propTemp.propertyType = propertyT
+            print('7')
             propTemp.propertyAddress = data['propertyAddress']
+            print('8')
             propTemp.propertyMarketPrice = data['propertyMarketPrice']
+            print('9')
             propTemp.propertyDescription = data['propertyDescription']
+            print('10')
             propTemp.propertySqFt = data['propertySqFt']
+            print('11')
             propTemp.propertyBedrooms = data['propertyBedrooms']
+            print('12')
             propTemp.propertyBathrooms = data['propertyBathrooms']
+            print('13')
             propTemp.save()
             propertyJSON = {
-                "propertyType":propTemp.propertyType,
-                "neighborhood":propTemp.neighborhood,
+                "propertyTypeName":propTemp.propertyType.propertyTypeName,
+                "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
+                "neighborhoodName":propTemp.neighborhood.neighborhood_name,
+                "neighborhoodDescription":propTemp.neighborhood.neighborhood_desc,
                 "propertyAddress":propTemp.propertyAddress,
                 "propertyCreatedDate":propTemp.propertyCreatedDate,
                 "propertyMarketPrice":propTemp.propertyMarketPrice,
@@ -124,7 +141,7 @@ def properties(request):
         for ownership in ownProperties:
             ownership.property_id.delete()
         return HttpResponse("All of your properties were deleted.", status=200)
-        
+
 def register(request):
     "Registers a user"
 
