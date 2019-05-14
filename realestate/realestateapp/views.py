@@ -59,8 +59,8 @@ def register(request):
 
 
 def checkout(request):
-    if request.method == "GET":
-        if User.is_authenticated():
+    if User.is_authenticated():
+        if request.method == "GET":
             cartItems = Property.objects.all()
             cartItemList = []
             for cartItem in cartItems:
@@ -79,3 +79,10 @@ def checkout(request):
 
         if request.method == "DELETE":
             return HttpResponse("Delete cart item")
+
+def coupoon_with_id(request):
+    if request.method == "GET":
+         # PATCH: Edit specified coupon
+    if request.method == "POST":
+        # DELETE: Remove specified coupon
+    if request.method == "DELETE":
