@@ -1,7 +1,36 @@
 from django.db import models
 import datetime
 
-# Create your models here.
+class UserDetail(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    userPicture = models.ImageField(upload_to = 'user_pics/', blank=True, default = 'user_pics/None/no-img.jpg')
+    userDesc = models.TextField(max_length=1000, blank=True , default = 'This user has no description yet.')
+
+class Role(models.Model):
+    roleName = models.CharField(max_length=30, blank=False)
+    roleDescription = models.CharField(max_length=250, blank=True)
+
+class User_Role(models.Model):
+    user_id = models.ForeignKey(User, blank=False)
+    role_id = models.ForeignKey(Role, blank=False)
+    beginDate = models.DateTimeField(blank=False, default=datetime.now)
+    endDate = models.DateTimeField(blank=True, null=True)
+
+class Ownership(models.Model):
+    user_id = models.ForeignKey(User, blank=False)
+    property_id = models.ForeignKey(Property, blank=False)
+    coupon_id = models.ForeignKey(Coupon, blank=False)
+    ownershipBeginDate = models.DateTimeField(blank=False, default=datetime.now)
+    ownershipEndDate = models.DateTimeField(blank=True, null=True)
+    ownershipAskingPrice = models.DecimalField(max_digits=12, decimal_places=2)
+    ownershipPaidPrice = models.DecimalField(max_digits=12, decimal_places=2)
+
+class Cart(models.Model):
+    user_id = models.ForeignKey(User)
+    property_id = models.ForeignKey(Property)
+    cartAddedDate = models.DateTimeField(blank=False, default=datetime.now)
+    cartRemovedDate = models.DateTimeField(blank=True, null=True)
+
 class CouponType(models.Model):
     couponTypeName = models.CharField(max_length=30)
     couponTypeDescription = models.CharField(max_length=250)
