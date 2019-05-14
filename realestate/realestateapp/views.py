@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from .models import Coupon, CouponType
+from .models import Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.contrib.auth.models import User
@@ -59,15 +59,72 @@ def coupons(request):
 
 @csrf_exempt
 def properties(request):
-    pass
-    # if request.method == 'GET':
-
-    # elif request.method == 'POST':
-    # elif request.method == 'DELETE':
+    if request.method == 'GET':
+        ownProperties = Ownership.objects.filter(user_id=request.user)
+        propertiesList = []
+        for ownership in ownProperties:
+            prop = ownership.property_id
+            propertyTemp = {
+                "propertyType":prop.propertyType,
+                "neighborhood":prop.neighborhood,
+                "propertyAddress":prop.propertyAddress,
+                "propertyCreatedDate":prop.propertyCreatedDate,
+                "propertyMarketPrice":prop.propertyMarketPrice,
+                "propertyDescription":prop.propertyDescription,
+                "propertySqFt":prop.propertySqFt,
+                "propertyBedrooms":prop.propertyBedrooms,
+                "propertyBathrooms":prop.propertyBathrooms
+            }
+            propertiesList.append(propertyTemp)
+        return JsonResponse(propertiesList, status=200)
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return HttpResponse("Error decoding JSON file.", status=400)
+        else:
+            try:
+                propertyT = PropertyType()
+                propertyT.propertyTypeName = data['propertyTypeName']
+                propertyT.propertyTypeDescription = data['propertyTypeDescription']
+                propertyT.save()
+            except:
+                propertyT = PropertyType.objects.get(couponTypeName=data['propertyTypeName'])
+            try:
+                neighborhood = Neighborhood()
+                neighborhood.neighbordhood_name = data['NeighborhoodName']
+                neighborhood.neighbordhood_desc = data['NeighborhoodDescription']
+                neighborhood.save()
+            except:
+                neighborhood = neighborhood.objects.get(neighborhood_name=data['NeighborhoodName'])
+            propTemp = Property()
+            propTemp.neighborhood = neighborhood
+            propTemp.propertyType = propertyT
+            propTemp.propertyAddress = data['propertyAddress']
+            propTemp.propertyMarketPrice = data['propertyMarketPrice']
+            propTemp.propertyDescription = data['propertyDescription']
+            propTemp.propertySqFt = data['propertySqFt']
+            propTemp.propertyBedrooms = data['propertyBedrooms']
+            propTemp.propertyBathrooms = data['propertyBathrooms']
+            propTemp.save()
+            propertyJSON = {
+                "propertyType":propTemp.propertyType,
+                "neighborhood":propTemp.neighborhood,
+                "propertyAddress":propTemp.propertyAddress,
+                "propertyCreatedDate":propTemp.propertyCreatedDate,
+                "propertyMarketPrice":propTemp.propertyMarketPrice,
+                "propertyDescription":propTemp.propertyDescription,
+                "propertySqFt":propTemp.propertySqFt,
+                "propertyBedrooms":propTemp.propertyBedrooms,
+                "propertyBathrooms":propTemp.propertyBathrooms
+            }
+            return JsonResponse(propertyJSON, status=200)
+    elif request.method == 'DELETE':
+        ownProperties = Ownership.objects.filter(user_id=request.user)
+        for ownership in ownProperties:
+            ownership.property_id.delete()
+        return HttpResponse("All of your properties were deleted.", status=200)
         
-    # elif request.method == 'POST':
-    # elif request.method == 'DELETE':
-
 def register(request):
     "Registers a user"
 
