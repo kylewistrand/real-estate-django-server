@@ -26,6 +26,9 @@ def coupons(request):
 
 
 def register(request):
+    if request.method == 'GET':
+        return render(request, 'auth/register.html', { })
+
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
 
