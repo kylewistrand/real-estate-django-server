@@ -55,12 +55,12 @@ class Property(models.Model):
     propertyBathrooms = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
 
 class Offer(models.Model):
-    propertyBuilding = models.ForeignKey(Property, on_delete=models.CASCADE)
-    user = models.ManyToManyField(User)
-    offerAmount = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=False, null=False)
-    offerDate = models.DateTimeField(default=datetime.datetime.now())
-    offerCounter = models.DecimalField(decimal_places=2, max_digits=9, unique=False, null=True)
-    offerCounterDate = models.DateTimeField(default=datetime.datetime.now)
+    propertyBuilding = models.ManyToManyField(Property)
+    user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
+    offerAmount = models.DecimalField(decimal_places=2, max_digits=12, default=0, null=False)
+    offerDate = models.DateTimeField(datetime.datetime.now())
+    offerCounterAmount = models.DecimalField(decimal_places=2, max_digits=12, blank=True, null=True)
+    offerCounterDate = models.DateTimeField(blank=True, null=True)
 
 class Photo(models.Model):
     photo_id = models.AutoField(primary_key=True)
