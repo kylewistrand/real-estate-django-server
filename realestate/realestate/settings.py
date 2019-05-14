@@ -23,9 +23,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '#b5*ik=98gzcqsn&p6bry!rf93*%p+ypa6zv9$)bk*24%zqld)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost', 
+    '127.0.0.1'
+]
 
 
 # Application definition
@@ -37,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'realestateapp'
 ]
 
 MIDDLEWARE = [
@@ -118,3 +122,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+CSRF_COOKIE_SECURE=False
