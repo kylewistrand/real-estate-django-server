@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
-from .models import Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership
+from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
+Photo, Property_Photo, Amenity, Property_Amenity)
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.contrib.auth.models import User
@@ -91,37 +92,42 @@ def properties(request):
             except:
                 propertyT = PropertyType.objects.get(propertyTypeName=data['propertyTypeName'])
             try:
-                print('0')
                 neighborhood = Neighborhood()
-                print('1')
                 neighborhood.neighborhood_name = data['neighborhoodName']
-                print('2')
                 neighborhood.neighborhood_desc = data['neighborhoodDescription']
-                print('3')
                 neighborhood.save()
-                print('4')
             except:
                 neighborhood = neighborhood.objects.get(neighborhood_name=data['neighborhoodName'])
-                print('test')
             propTemp = Property()
-            print('5')
             propTemp.neighborhood = neighborhood
-            print('6')
             propTemp.propertyType = propertyT
-            print('7')
             propTemp.propertyAddress = data['propertyAddress']
-            print('8')
             propTemp.propertyMarketPrice = data['propertyMarketPrice']
-            print('9')
             propTemp.propertyDescription = data['propertyDescription']
-            print('10')
             propTemp.propertySqFt = data['propertySqFt']
-            print('11')
             propTemp.propertyBedrooms = data['propertyBedrooms']
-            print('12')
             propTemp.propertyBathrooms = data['propertyBathrooms']
-            print('13')
             propTemp.save()
+
+            amenity = Amenity()
+            amenity.amenity_name = data['amenityName']
+            amenity.amenity_desc = data['amenityDescription']
+            amenity.save()
+
+            propAmen = Property_Amenity()
+            propAmen.property_id = propTemp
+            propAmen.amenity = amenity
+            propAmen.save()
+
+            photo = Photo()
+            photo.photo_file = data['photoFile']
+            photo.save()
+
+            propPhoto = Property_Photo()
+            propPhoto.photo_id = photo
+            propPhoto.property_id = propTemp
+            propPhoto.save()
+
             propertyJSON = {
                 "propertyTypeName":propTemp.propertyType.propertyTypeName,
                 "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
@@ -133,7 +139,9 @@ def properties(request):
                 "propertyDescription":propTemp.propertyDescription,
                 "propertySqFt":propTemp.propertySqFt,
                 "propertyBedrooms":propTemp.propertyBedrooms,
-                "propertyBathrooms":propTemp.propertyBathrooms
+                "propertyBathrooms":propTemp.propertyBathrooms,
+                "amenityName":amenity.amenity_name,
+                "amenityDescription":amenity.amenity_desc
             }
             return JsonResponse(propertyJSON, status=200)
     elif request.method == 'DELETE':
@@ -141,6 +149,41 @@ def properties(request):
         for ownership in ownProperties:
             ownership.property_id.delete()
         return HttpResponse("All of your properties were deleted.", status=200)
+
+@csrf_exempt
+def specificProperty(request, property_id):
+    if request.method == 'GET':
+        propTemp = Property.objects.get(id=property_id)
+        propertyJSON = {
+            "propertyTypeName":propTemp.propertyType.propertyTypeName,
+            "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
+            "neighborhoodName":propTemp.neighborhood.neighborhood_name,
+            "neighborhoodDescription":propTemp.neighborhood.neighborhood_desc,
+            "propertyAddress":propTemp.propertyAddress,
+            "propertyCreatedDate":propTemp.propertyCreatedDate,
+            "propertyMarketPrice":propTemp.propertyMarketPrice,
+            "propertyDescription":propTemp.propertyDescription,
+            "propertySqFt":propTemp.propertySqFt,
+            "propertyBedrooms":propTemp.propertyBedrooms,
+            "propertyBathrooms":propTemp.propertyBathrooms
+        }
+        return JsonResponse(propertyJSON, status=200)
+    elif request.method == 'POST':
+        cart = Cart()
+        cart.user_id = request.user
+        prop = Property.objects.get(id=property_id)
+        cart.property_id = prop
+        cart.save()
+        return HttpResponse("Successfully added property to your cart", status=200)
+    elif request.method == 'DELETE':
+        try:
+            prop = Property.objects.get(id=property_id)
+        except:
+            return HttpResponse("Property doesn't exist", status=400)
+        else:
+            prop.delete()
+            return HttpResponse("Property was successfully deleted", status=200)
+
 
 def register(request):
     "Registers a user"
