@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, IntegrityError
 from django.contrib.auth.models import User
 import datetime
 
@@ -26,6 +26,13 @@ class CouponType(models.Model):
     couponTypeName = models.CharField(max_length=30, default="General", unique=True, blank=False)
     couponTypeDescription = models.CharField(max_length=250, default="Not specified.", unique=False, blank=True)
 
+    def save(self, *args, **kwargs):
+        try:
+            super().save(*args, **kwargs)
+        except IntegrityError:
+            return
+        
+
 class Coupon(models.Model):
     couponType = models.ForeignKey(CouponType, on_delete=models.CASCADE)
     couponValue = models.DecimalField(decimal_places=2, max_digits=3, default=0, unique=False, null=False)
@@ -48,11 +55,11 @@ class Property(models.Model):
     propertyBathrooms = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
 
 class Offer(models.Model):
-    propertyBuilding = models.ManyToManyField(Property)
+    propertyBuilding = models.ForeignKey(Property, on_delete=models.CASCADE)
     user = models.ManyToManyField(User)
     offerAmount = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=False, null=False)
     offerDate = models.DateTimeField(default=datetime.datetime.now())
-    offerCounter = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=False, null=False)
+    offerCounter = models.DecimalField(decimal_places=2, max_digits=9, unique=False, null=True)
     offerCounterDate = models.DateTimeField(default=datetime.datetime.now)
 
 class Photo(models.Model):

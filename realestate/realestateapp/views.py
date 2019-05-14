@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
-Photo, Property_Photo, Amenity, Property_Amenity)
+Photo, Property_Photo, Amenity, Property_Amenity, Offer)
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.contrib.auth.models import User
@@ -184,7 +184,6 @@ def specificProperty(request, property_id):
         else:
             prop.delete()
             return HttpResponse("Property was successfully deleted", status=200)
-
 
 def register(request):
     "Registers a user"
