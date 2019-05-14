@@ -81,8 +81,9 @@ def checkout(request):
             return HttpResponse("Delete cart item")
 
 def coupoon_with_id(request):
-    if request.method == "GET":
-         # PATCH: Edit specified coupon
-    if request.method == "POST":
-        # DELETE: Remove specified coupon
-    if request.method == "DELETE":
+    pass
+    # if request.method == "GET":
+    #      # PATCH: Edit specified coupon
+    # if request.method == "POST":
+    #     # DELETE: Remove specified coupon
+    # if request.method == "DELETE":

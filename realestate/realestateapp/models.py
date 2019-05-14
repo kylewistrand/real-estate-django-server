@@ -12,25 +12,10 @@ class Role(models.Model):
     roleDescription = models.CharField(max_length=250, blank=True)
 
 class User_Role(models.Model):
-    user_id = models.ForeignKey(User, blank=False)
-    role_id = models.ForeignKey(Role, blank=False)
-    beginDate = models.DateTimeField(blank=False, default=datetime.now)
+    user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
+    role_id = models.ForeignKey(Role, blank=False, on_delete=models.CASCADE)
+    beginDate = models.DateTimeField(blank=False, default=datetime.datetime.now)
     endDate = models.DateTimeField(blank=True, null=True)
-
-class Ownership(models.Model):
-    user_id = models.ForeignKey(User, blank=False)
-    property_id = models.ForeignKey(Property, blank=False)
-    coupon_id = models.ForeignKey(Coupon, blank=False)
-    ownershipBeginDate = models.DateTimeField(blank=False, default=datetime.now)
-    ownershipEndDate = models.DateTimeField(blank=True, null=True)
-    ownershipAskingPrice = models.DecimalField(max_digits=12, decimal_places=2)
-    ownershipPaidPrice = models.DecimalField(max_digits=12, decimal_places=2)
-
-class Cart(models.Model):
-    user_id = models.ForeignKey(User)
-    property_id = models.ForeignKey(Property)
-    cartAddedDate = models.DateTimeField(blank=False, default=datetime.now)
-    cartRemovedDate = models.DateTimeField(blank=True, null=True)
 
 class Neighborhood(models.Model):
     neighborhood_id = models.AutoField(primary_key=True)
@@ -89,4 +74,19 @@ class Property_Amenity(models.Model):
     property_amenity_id = models.AutoField(primary_key=True)
     property_id = models.ForeignKey(Property, on_delete=models.CASCADE)
     amenity = models.ForeignKey(Amenity, on_delete=models.CASCADE)
+
+class Cart(models.Model):
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    property_id = models.ForeignKey(Property, on_delete=models.CASCADE)
+    cartAddedDate = models.DateTimeField(blank=False, default=datetime.datetime.now)
+    cartRemovedDate = models.DateTimeField(blank=True, null=True)
+
+class Ownership(models.Model):
+    user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
+    property_id = models.ForeignKey(Property, blank=False, on_delete=models.CASCADE)
+    coupon_id = models.ForeignKey(Coupon, blank=False, on_delete=models.CASCADE)
+    ownershipBeginDate = models.DateTimeField(blank=False, default=datetime.datetime.now)
+    ownershipEndDate = models.DateTimeField(blank=True, null=True)
+    ownershipAskingPrice = models.DecimalField(max_digits=12, decimal_places=2)
+    ownershipPaidPrice = models.DecimalField(max_digits=12, decimal_places=2)
 
