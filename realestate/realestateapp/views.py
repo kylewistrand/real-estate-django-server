@@ -4,6 +4,7 @@ from .models import Coupon, CouponType
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from .forms import RegistrationForm
+from .models import Property
 
 # Create your views here.
 def coupons(request):
@@ -56,3 +57,25 @@ def register(request):
         form = RegistrationForm      
         return HttpResponse("Method not allowed on /auth/register.(Method Not Allowed)", status=405)
 
+
+def checkout(request):
+    if request.method == "GET":
+        if User.is_authenticated():
+            cartItems = Property.objects.all()
+            cartItemList = []
+            for cartItem in cartItems:
+                cartTemp = {
+                    "property_name":cartItem.couponName,
+                    "proptery_price":cartItem.couponValue,
+                    "property_description":cartItem.couponDescription,
+                    "property_sqfoot":cartItem.couponType.couponTypeName,
+
+                }
+                cartItem.append(cartTemp)
+            return JsonResponse(cartItemList, safe=False, status=200)
+    
+        if request.method == "POST":
+            return HttpResponse("Items Purchesed", status=201)
+
+        if request.method == "DELETE":
+            return HttpResponse("Delete cart item")
