@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
-Photo, Property_Photo, Amenity, Property_Amenity, Offer)
+Photo, Property_Photo, Amenity, Property_Amenity, Offer, User_Role)
 from django.views.decorators.csrf import csrf_exempt
 import json, hashlib
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from .forms import RegistrationForm
 from django.views.decorators.debug import sensitive_post_parameters
 
@@ -98,6 +98,7 @@ def signin(request):
         # Unsupported method
         return HttpResponse("Method not allowed on realestateapp/auth/signin.", status=405)
 
+@csrf_exempt
 def specificUser(request, user_id):
     """
     If method is GET:
@@ -124,6 +125,20 @@ def specificUser(request, user_id):
                 'gravatarURL': gravatar_url
             }
         )
+    if request.method == 'DELETE':
+        try:
+            isAdmin = User_Role.objects.get(user_id=request.user).role_id.roleName == 'Admin'
+        except:
+            return HttpResponse("User has no role.",status=403)
+        isSelf = user_id == request.user.id
+        if isAdmin or isSelf:
+            try:
+                User.objects.get(pk=user_id).delete()
+                return HttpResponse("User "+str(user_id)+"  Deleted.",status=202)
+            except User.DoesNotExist:
+                return HttpResponse("User "+str(user_id)+"  Does Not Exist.",status=404)
+        else:
+            return HttpResponse("Only admins may delete other users.",status=403)
     else:
         # Unsupported method
         return HttpResponse("Method not allowed on realestateapp/users/.", status=405)
