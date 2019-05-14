@@ -27,6 +27,8 @@ def coupons(request):
 
 
 def register(request):
+    "Registers a user"
+
     if request.method == 'GET':
         return render(request, 'auth/register.html', { })
 
@@ -59,6 +61,8 @@ def register(request):
 
 
 def checkout(request):
+    "Allows user to checkout items from their cart"
+
     if User.is_authenticated():
         if request.method == "GET":
             cartItems = Property.objects.all()
@@ -80,9 +84,13 @@ def checkout(request):
         if request.method == "DELETE":
             return HttpResponse("Delete cart item")
 
-def coupoon_with_id(request):
-    if request.method == "GET":
-         # PATCH: Edit specified coupon
-    if request.method == "POST":
-        # DELETE: Remove specified coupon
-    if request.method == "DELETE":
+def coupon_with_id(request):
+    "Allows admin user to edit, delete a certain coupon"
+    
+    if User.is_superuser():
+        if request.method == "GET":
+            return NotImplemented
+        if request.method == "POST":
+            return NotImplemented
+        if request.method == "DELETE":
+            return NotImplemented
