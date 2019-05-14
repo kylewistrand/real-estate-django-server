@@ -26,7 +26,7 @@ class Property(models.Model):
     propertyType = models.ForeignKey(PropertyType, on_delete=models.CASCADE)
     neighborhood = models.ForeignKey(Neighborhood, on_delete=models.CASCADE)
     propertyAddress = models.CharField(max_length=100, default="", unique=True, null=True)
-    propertyCreatedDate = models.DateField()
+    propertyCreatedDate = models.DateField(default=datetime.datetime.now())
     propertyMarketPrice = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=True, null=True)
     propertyDescription = models.CharField(max_length=512, default="", unique=True, null=True)
     propertySqFt = models.PositiveSmallIntegerField(default=0, unique=True, null=False)
@@ -37,9 +37,9 @@ class Offer(models.Model):
     propertyBuilding = models.ManyToManyField(Property)
     user = models.ManyToManyField(User)
     offerAmount = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=True, null=False)
-    offerDate = models.DateTimeField(datetime.datetime.now())
-    #offerCounter
-    #offerCounterDate
+    offerDate = models.DateTimeField(default=datetime.datetime.now())
+    offerCounter = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=True, null=False)
+    offerCounterDate = models.DateTimeField(default=datetime.datetime.now)
 
 class Photo(models.Model):
     photo_id = models.AutoField(primary_key=True)
