@@ -8,8 +8,21 @@ class UserDetail(models.Model):
     userDesc = models.TextField(max_length=1000, blank=True , default = 'This user has no description yet.')
 
 class Role(models.Model):
-    roleName = models.CharField(max_length=30, blank=False)
-    roleDescription = models.CharField(max_length=250, blank=True)
+    ADMIN = 'ADMIN'
+    SELLER = 'SELLER'
+    USER = 'USER'
+    roleChoices = (
+        (ADMIN, 'ADMIN'),
+        (SELLER, 'SELLER'),
+        (USER, 'USER')
+    )
+    roleDescription = (
+        (ADMIN, 'Administrative controls'),
+        (SELLER, 'Sells properties'),
+        (USER, 'General user')
+    )
+    roleName = models.CharField(max_length=6, choices=roleChoices, default='USER')
+    roleDescription = models.CharField(max_length=6, choices=roleDescription, default='USER')
 
 class User_Role(models.Model):
     user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
@@ -26,18 +39,18 @@ class CouponType(models.Model):
     couponTypeName = models.CharField(max_length=30, default="General", unique=True, blank=False)
     couponTypeDescription = models.CharField(max_length=250, default="Not specified.", unique=False, blank=True)
 
-    def save(self, *args, **kwargs):
-        try:
-            super().save(*args, **kwargs)
-        except IntegrityError:
-            return
-        
-
 class Coupon(models.Model):
     couponType = models.ForeignKey(CouponType, on_delete=models.CASCADE)
     couponValue = models.DecimalField(decimal_places=2, max_digits=3, default=0, unique=False, null=False)
     couponName = models.CharField(max_length=30, default="Generic", unique=True, blank=False)
-    couponDescription = models.CharField(max_length=250, default="Generic coupon.", unique=False, blank=True)
+    couponDescription = models.CharField(max_length=250, default="", unique=False, blank=True)
+
+    #Will not save if coupon is not unique
+    def save(self, *args, **kwargs):
+        try:
+            super().save(*args, **kwargs)
+        except IntegrityError:
+            raise IntegrityError
 
 class PropertyType(models.Model):
     propertyTypeName = models.CharField(max_length=50, default="Unclassified", unique=True, blank=False)
@@ -54,6 +67,13 @@ class Property(models.Model):
     propertyBedrooms = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
     propertyBathrooms = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
 
+    #Property is not unique, such as address
+    def save(self, *args, **kwargs):
+        try:
+            super().save(*args, **kwargs)
+        except IntegrityError:
+            raise IntegrityError
+
 class Offer(models.Model):
     propertyBuilding = models.ManyToManyField(Property)
     user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
@@ -64,7 +84,7 @@ class Offer(models.Model):
 
 class Photo(models.Model):
     photo_id = models.AutoField(primary_key=True)
-    photo_file = models.URLField(unique=False, blank=True, default="https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg")
+    photo_file = models.URLField(unique=False, null=True, default="https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg")
     photo_added_date = models.DateTimeField(default=datetime.datetime.now)
 
 class Property_Photo(models.Model):
@@ -91,7 +111,7 @@ class Cart(models.Model):
 class Ownership(models.Model):
     user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
     property_id = models.ForeignKey(Property, blank=False, on_delete=models.CASCADE)
-    coupon_id = models.ForeignKey(Coupon, blank=False, on_delete=models.CASCADE)
+    coupon_id = models.ForeignKey(Coupon, null=True, on_delete=models.CASCADE)
     ownershipBeginDate = models.DateTimeField(blank=False, default=datetime.datetime.now)
     ownershipEndDate = models.DateTimeField(blank=True, null=True)
     ownershipAskingPrice = models.DecimalField(max_digits=12, decimal_places=2)
