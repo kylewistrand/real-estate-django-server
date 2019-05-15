@@ -60,17 +60,17 @@ Final project for INFO 441 (Server-Side Development) built with Django
 - POST: Make a new offer
 - PUT: Edit your own offer or create a counter offer
 ###### realestate/coupons/<coupon_id> (admin authentication)
--- PUT: Edit specified coupon
--- DELETE: Remove specified coupon
--- GET: Retrieve JSON of specified coupon
+- PUT: Edit specified coupon
+- DELETE: Remove specified coupon
+- GET: Retrieve JSON of specified coupon
 ###### realestate/auth/register 
--- POST: Create a new user
--- GET: Form
+- POST: Create a new user
+- GET: Form
 
 ###### realestate/checkout (User authentication)
--- GET: List of properties in cart
---POST: Purchase properties
--- DELETE: Remove specified property from cart
+- GET: List of properties in cart
+-POST: Purchase properties
+- DELETE: Remove specified property from cart
 
 
 
