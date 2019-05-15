@@ -10,8 +10,12 @@ from .forms import RegistrationForm
 from django.views.decorators.debug import sensitive_post_parameters
 
 # Create your views here.
+@csrf_exempt
 def coupons(request):
+    """Ability to view, delete, or create coupons."""
     if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
         coupons = Coupon.objects.all()
         couponsList = []
         for coupon in coupons:
@@ -24,10 +28,199 @@ def coupons(request):
             }
             couponsList.append(couponTemp)
         return JsonResponse(couponsList, safe=False, status=200)
-    # elif request.method == 'POST':
-    # elif request.method == 'DELETE':
+    elif request.method == 'POST':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return HttpResponse("Error decoding JSON file.", status=400)
+        else:
+            try:
+                couponT = CouponType()
+                couponT.couponTypeName = data['couponTypeName']
+                couponT.couponTypeDescription = data['couponTypeDescription']
+                couponT.save()
+            #If coupon type has already been made, then retrieve it.
+            except:
+                couponT = CouponType.objects.get(couponTypeName=data['couponTypeName'])
+            newCoupon = Coupon()
+            newCoupon.couponValue = data['couponValue']
+            newCoupon.couponName = data['couponName']
+            newCoupon.couponDescription = data['couponDescription']
+            newCoupon.couponType = couponT
+            newCoupon.save()
+            couponJSON = {
+                "couponName":newCoupon.couponName,
+                "couponValue":newCoupon.couponValue,
+                "couponDescription":newCoupon.couponDescription,
+                "couponTypeName":newCoupon.couponType.couponTypeName,
+                "couponTypeDescription":newCoupon.couponType.couponTypeDescription
+            }
+            return JsonResponse(couponJSON, status=200)
+    elif request.method == 'DELETE':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        coupons = Coupon.objects.all()
+        #Delete all of the coupons.
+        for coupon in coupons:
+            coupon.delete()
+        return HttpResponse("All coupons were deleted.", status=200)
 
+@csrf_exempt
+def properties(request):
+    """Create a property listing, view all of your own properties, or delete all of your properties"""
+    if request.method == 'GET':
+        #Get properties user owns
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        ownProperties = Ownership.objects.filter(user_id=request.user)
+        propertiesList = []
+        for ownership in ownProperties:
+            prop = ownership.property_id
+            propertyTemp = {
+                "propertyType":prop.propertyType,
+                "neighborhood":prop.neighborhood,
+                "propertyAddress":prop.propertyAddress,
+                "propertyCreatedDate":prop.propertyCreatedDate,
+                "propertyMarketPrice":prop.propertyMarketPrice,
+                "propertyDescription":prop.propertyDescription,
+                "propertySqFt":prop.propertySqFt,
+                "propertyBedrooms":prop.propertyBedrooms,
+                "propertyBathrooms":prop.propertyBathrooms
+            }
+            propertiesList.append(propertyTemp)
+        return JsonResponse(propertiesList, safe=False, status=200)
+    elif request.method == 'POST':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return HttpResponse("Error decoding JSON file.", status=400)
+        else:
+            try:
+                propertyT = PropertyType()
+                propertyT.propertyTypeName = data['propertyTypeName']
+                propertyT.propertyTypeDescription = data['propertyTypeDescription']
+                propertyT.save()
+            #If property type already exists, then retrieve it.
+            except:
+                propertyT = PropertyType.objects.get(propertyTypeName=data['propertyTypeName'])
+            try:
+                neighborhood = Neighborhood()
+                neighborhood.neighborhood_name = data['neighborhoodName']
+                neighborhood.neighborhood_desc = data['neighborhoodDescription']
+                neighborhood.save()
+            #If neighborhood already exists, then retrieve it.
+            except:
+                neighborhood = neighborhood.objects.get(neighborhood_name=data['neighborhoodName'])
+            propTemp = Property()
+            propTemp.neighborhood = neighborhood
+            propTemp.propertyType = propertyT
+            propTemp.propertyAddress = data['propertyAddress']
+            propTemp.propertyMarketPrice = data['propertyMarketPrice']
+            propTemp.propertyDescription = data['propertyDescription']
+            propTemp.propertySqFt = data['propertySqFt']
+            propTemp.propertyBedrooms = data['propertyBedrooms']
+            propTemp.propertyBathrooms = data['propertyBathrooms']
+            propTemp.save()
 
+            amenity = Amenity()
+            amenity.amenity_name = data['amenityName']
+            amenity.amenity_desc = data['amenityDescription']
+            amenity.save()
+
+            propAmen = Property_Amenity()
+            propAmen.property_id = propTemp
+            propAmen.amenity = amenity
+            propAmen.save()
+
+            photo = Photo()
+            photo.photo_file = data['photoFile']
+            photo.save()
+
+            propPhoto = Property_Photo()
+            propPhoto.photo_id = photo
+            propPhoto.property_id = propTemp
+            propPhoto.save()
+
+            owner = Ownership()
+            owner.user_id = request.user
+            owner.property_id = propTemp
+            owner.ownershipAskingPrice = data['ownershipAskingPrice']
+            owner.ownershipPaidPrice = data['ownershipPaidPrice']
+            owner.save()
+
+            propertyJSON = {
+                "owner":owner.user_id.username,
+                "ownerAskingPrice":owner.ownershipAskingPrice,
+                "ownerPaidPrice":owner.ownershipPaidPrice,
+                "propertyTypeName":propTemp.propertyType.propertyTypeName,
+                "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
+                "neighborhoodName":propTemp.neighborhood.neighborhood_name,
+                "neighborhoodDescription":propTemp.neighborhood.neighborhood_desc,
+                "propertyAddress":propTemp.propertyAddress,
+                "propertyCreatedDate":propTemp.propertyCreatedDate,
+                "propertyMarketPrice":propTemp.propertyMarketPrice,
+                "propertyDescription":propTemp.propertyDescription,
+                "propertySqFt":propTemp.propertySqFt,
+                "propertyBedrooms":propTemp.propertyBedrooms,
+                "propertyBathrooms":propTemp.propertyBathrooms,
+                "amenityName":amenity.amenity_name,
+                "amenityDescription":amenity.amenity_desc
+            }
+            return JsonResponse(propertyJSON, status=200)
+    elif request.method == 'DELETE':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        ownProperties = Ownership.objects.filter(user_id=request.user)
+        #Delete only properties that user owns
+        for ownership in ownProperties:
+            prop = Property.objects.get(id=ownership.property_id.id)
+            prop.delete()
+        return HttpResponse("All of your properties were deleted.", status=200)
+
+@csrf_exempt
+def specificProperty(request, property_id):
+    """Add property to cart, get property information, or delete specified property"""
+    if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        propTemp = Property.objects.get(id=property_id)
+        propertyJSON = {
+            "propertyTypeName":propTemp.propertyType.propertyTypeName,
+            "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
+            "neighborhoodName":propTemp.neighborhood.neighborhood_name,
+            "neighborhoodDescription":propTemp.neighborhood.neighborhood_desc,
+            "propertyAddress":propTemp.propertyAddress,
+            "propertyCreatedDate":propTemp.propertyCreatedDate,
+            "propertyMarketPrice":propTemp.propertyMarketPrice,
+            "propertyDescription":propTemp.propertyDescription,
+            "propertySqFt":propTemp.propertySqFt,
+            "propertyBedrooms":propTemp.propertyBedrooms,
+            "propertyBathrooms":propTemp.propertyBathrooms
+        }
+        return JsonResponse(propertyJSON, status=200)
+    elif request.method == 'POST':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        cart = Cart()
+        cart.user_id = request.user
+        prop = Property.objects.get(id=property_id)
+        cart.property_id = prop
+        cart.save()
+        return HttpResponse("Successfully added property to your cart", status=200)
+    elif request.method == 'DELETE':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        try:
+            prop = Property.objects.get(id=property_id)
+        except:
+            return HttpResponse("Property doesn't exist", status=400)
+        else:
+            prop.delete()
+            return HttpResponse("Property was successfully deleted", status=200)
 
 def register(request):
     "Registers a user"
