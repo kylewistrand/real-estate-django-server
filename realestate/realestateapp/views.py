@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
-Photo, Property_Photo, Amenity, Property_Amenity, Offer, User_Role)
+Photo, Property_Photo, Amenity, Property_Amenity, Offer, Role, User_Role)
 from django.views.decorators.csrf import csrf_exempt
 import json, hashlib
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
+from datetime import datetime
 from .forms import RegistrationForm
 from django.views.decorators.debug import sensitive_post_parameters
 
@@ -122,9 +123,31 @@ def specificUser(request, user_id):
 
         return render(request, 'main/specificUser.html', {
                 'user': userInfo,
-                'gravatarURL': gravatar_url
+                'gravatarURL': gravatar_url,
+                'roles': Role.objects.all()
             }
         )
+    if request.method == 'POST':
+        try:
+            isAdmin = User_Role.objects.get(user_id=request.user).role_id.roleName == 'Admin'
+        except:
+            return HttpResponse("User has no role.",status=403)
+        isSelf = user_id == request.user.id
+        if isAdmin or isSelf:
+            try:
+                userRole = User_Role.objects.filter(endDate__isnull=True).get(user_id=user_id)
+                newRole = Role.objects.get(roleName=request.POST['role'])
+                userRole.endDate = datetime.now()
+                userRole.save()
+                newOffer = User_Role.objects.create(
+                    user_id=User.objects.get(pk=user_id),
+                    role_id=newRole
+                )
+                return HttpResponse("User "+str(user_id)+"  Deleted.",status=202)
+            except User.DoesNotExist:
+                return HttpResponse("User "+str(user_id)+"  Does Not Exist.",status=404)
+        else:
+            return HttpResponse("Only admins may delete other users.",status=403)
     if request.method == 'DELETE':
         try:
             isAdmin = User_Role.objects.get(user_id=request.user).role_id.roleName == 'Admin'
