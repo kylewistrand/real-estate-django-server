@@ -298,6 +298,10 @@ def specificUser(request, user_id):
     If method is GET:
         Returns page with information of user of given ID
         If user of given ID does not exist, returns 404
+    If method is POST:
+        Update user's role
+    If method is DELETE:
+        Delete user
     If other method:
         Returns status 405
     """
@@ -370,7 +374,7 @@ def offers(request):
         Validates that a user is properly authenticated
         Makes an offer for a property
         If input is invalud, returns 400
-    If method is PATCH:
+    If method is PUT:
         Validates that a user is properly authenticated
         Edit your own offer or create a counter offer
     If other method:
