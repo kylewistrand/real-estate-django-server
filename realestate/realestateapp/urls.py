@@ -11,4 +11,5 @@ urlpatterns = [
         path('checkout', views.checkout, name="Checkout"),
         path('offers', views.offers, name="Offers"),
         path('coupons/<coupon_id>', views.checkout, name="edit-certain-coupon"),
+        path('users/<int:user_id>', views.specificUser, name="specificUser"),
 ]

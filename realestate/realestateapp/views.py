@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
-Photo, Property_Photo, Amenity, Property_Amenity, Offer)
+Photo, Property_Photo, Amenity, Property_Amenity, Offer, User_Role)
 from django.views.decorators.csrf import csrf_exempt
-import json
+import json, hashlib
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from .forms import RegistrationForm
 from django.views.decorators.debug import sensitive_post_parameters
 
@@ -290,6 +290,52 @@ def signin(request):
     else:
         # Unsupported method
         return HttpResponse("Method not allowed on realestateapp/auth/signin.", status=405)
+
+@csrf_exempt
+def specificUser(request, user_id):
+    """
+    If method is GET:
+        Returns page with information of user of given ID
+        If user of given ID does not exist, returns 404
+    If other method:
+        Returns status 405
+    """
+    if not request.user.is_authenticated:
+        # User is not authenticated
+        return HttpResponseRedirect('auth/signin')
+    if request.method == 'GET':
+        try:
+            userInfo = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return HttpResponse("User "+str(user_id)+"  Not Found.",status=404)
+
+        # Get email hash for gravitar and append it to the gravitar URL
+        emailHash = hashlib.md5(userInfo.email.lower().encode('utf-8')).hexdigest()
+        gravatar_url = "https://www.gravatar.com/avatar/" + emailHash
+
+        return render(request, 'main/specificUser.html', {
+                'user': userInfo,
+                'gravatarURL': gravatar_url
+            }
+        )
+    if request.method == 'DELETE':
+        try:
+            isAdmin = User_Role.objects.get(user_id=request.user).role_id.roleName == 'Admin'
+        except:
+            return HttpResponse("User has no role.",status=403)
+        isSelf = user_id == request.user.id
+        if isAdmin or isSelf:
+            try:
+                User.objects.get(pk=user_id).delete()
+                return HttpResponse("User "+str(user_id)+"  Deleted.",status=202)
+            except User.DoesNotExist:
+                return HttpResponse("User "+str(user_id)+"  Does Not Exist.",status=404)
+        else:
+            return HttpResponse("Only admins may delete other users.",status=403)
+    else:
+        # Unsupported method
+        return HttpResponse("Method not allowed on realestateapp/users/.", status=405)
+
 
 @csrf_exempt
 def offers(request):
