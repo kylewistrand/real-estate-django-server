@@ -301,6 +301,21 @@ def properties(request):
     #         return JsonResponse(propertyJSON, status=200)
 
 @csrf_exempt
+def cart(request):
+    if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        print(request.user)
+        properties = [cartItem.property_id for cartItem in Cart.objects.filter(cartRemovedDate__isnull=True).get(user_id=request.user.id)]
+        ownerships = Ownership.objects.all()
+        print(Cart.objects.all()[0].cartRemovedDate)
+        return render(request, 'main/cart.html', {'ownerships':ownerships, 'properties':properties})
+    if request.method == 'DELETE':
+        return HttpResponse("Method not allowed.", status=405)
+    else:
+        return HttpResponse("Method not allowed.", status=405)
+
+@csrf_exempt
 def specificProperty(request, property_id):
     """Add property to cart, get property information, or delete specified property"""
     if request.method == 'GET':
