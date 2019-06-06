@@ -59,7 +59,7 @@ class PropertyType(models.Model):
 class Property(models.Model):
     propertyType = models.ForeignKey(PropertyType, on_delete=models.CASCADE)
     neighborhood = models.ForeignKey(Neighborhood, on_delete=models.CASCADE)
-    propertyAddress = models.CharField(max_length=100, unique=True, null=True)
+    propertyAddress = models.CharField(max_length=100, unique=True, null=False, default="Address not given")
     propertyCreatedDate = models.DateField(default=datetime.datetime.now())
     propertyMarketPrice = models.DecimalField(decimal_places=2, max_digits=9, default=0, unique=False, null=False)
     propertyDescription = models.CharField(max_length=512, default="", unique=False, blank=True)

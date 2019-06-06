@@ -6,9 +6,14 @@ from django.views.decorators.csrf import csrf_exempt
 import json, hashlib
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
+from .forms import RegistrationForm, PropertiesForm
 from datetime import datetime
-from .forms import RegistrationForm
 from django.views.decorators.debug import sensitive_post_parameters
+import requests
+from urllib.request import urlopen as uReq
+from bs4 import BeautifulSoup as soup
+from decimal import Decimal
+import datetime
 
 # Create your views here.
 @csrf_exempt
@@ -72,106 +77,115 @@ def coupons(request):
 def properties(request):
     """Create a property listing, view all of your own properties, or delete all of your properties"""
     if request.method == 'GET':
-        #Get properties user owns
-        if not request.user.is_authenticated:
-            return HttpResponse("Not logged in.", status=401)
-        ownProperties = Ownership.objects.filter(user_id=request.user)
-        propertiesList = []
-        for ownership in ownProperties:
-            prop = ownership.property_id
-            propertyTemp = {
-                "propertyType":prop.propertyType,
-                "neighborhood":prop.neighborhood,
-                "propertyAddress":prop.propertyAddress,
-                "propertyCreatedDate":prop.propertyCreatedDate,
-                "propertyMarketPrice":prop.propertyMarketPrice,
-                "propertyDescription":prop.propertyDescription,
-                "propertySqFt":prop.propertySqFt,
-                "propertyBedrooms":prop.propertyBedrooms,
-                "propertyBathrooms":prop.propertyBathrooms
-            }
-            propertiesList.append(propertyTemp)
-        return JsonResponse(propertiesList, safe=False, status=200)
+        form = PropertiesForm()
+        properties = Property.objects.all()
+        ownerships = Ownership.objects.all()
+        return render(request, 'main/properties.html', {'form':form, 'ownerships':ownerships, 'properties':properties})
     elif request.method == 'POST':
         if not request.user.is_authenticated:
-            return HttpResponse("Not logged in.", status=401)
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-        except json.JSONDecodeError:
-            return HttpResponse("Error decoding JSON file.", status=400)
+            return HttpResponse("Not logged in", status=400)
         else:
-            try:
-                propertyT = PropertyType()
-                propertyT.propertyTypeName = data['propertyTypeName']
-                propertyT.propertyTypeDescription = data['propertyTypeDescription']
-                propertyT.save()
-            #If property type already exists, then retrieve it.
-            except:
-                propertyT = PropertyType.objects.get(propertyTypeName=data['propertyTypeName'])
-            try:
-                neighborhood = Neighborhood()
-                neighborhood.neighborhood_name = data['neighborhoodName']
-                neighborhood.neighborhood_desc = data['neighborhoodDescription']
-                neighborhood.save()
-            #If neighborhood already exists, then retrieve it.
-            except:
-                neighborhood = neighborhood.objects.get(neighborhood_name=data['neighborhoodName'])
-            propTemp = Property()
-            propTemp.neighborhood = neighborhood
-            propTemp.propertyType = propertyT
-            propTemp.propertyAddress = data['propertyAddress']
-            propTemp.propertyMarketPrice = data['propertyMarketPrice']
-            propTemp.propertyDescription = data['propertyDescription']
-            propTemp.propertySqFt = data['propertySqFt']
-            propTemp.propertyBedrooms = data['propertyBedrooms']
-            propTemp.propertyBathrooms = data['propertyBathrooms']
-            propTemp.save()
+            form = PropertiesForm(request.POST)
+            if form.is_valid():
+                address = form.cleaned_data['address']
+                city = form.cleaned_data['city']
+                state = form.cleaned_data['state']
+                # askingPrice = 0.0
+                #Zillow reformat
+                apiId = 'X1-ZWz1h4b5dpi4nf_1k6qj'
+                addressWords = address.split()
+                reformatAddress = ""
+                for addressWord in addressWords:
+                    reformatAddress = reformatAddress + "+" + addressWord
+                reformatAddress = reformatAddress[1:]
+                cityWords = city.split()
+                reformatCity = ""
+                for cityWord in cityWords:
+                    reformatCity = reformatCity + "+" + cityWord
+                reformatCity = reformatCity[1:]
+                reformatCityState = reformatCity + "%2C+" + state
+                url = "http://www.zillow.com/webservice/GetDeepSearchResults.htm?zws-id=" + apiId +"&address=" + reformatAddress + "&citystatezip=" + reformatCityState
+                
+                #Zillow fetch
+                r = uReq(url)
+                # data = r.json()
+                # citystatezip = data['SearchResults']['request']
+                page_html = r.read()
+                r.close()
+                page_soup = soup(page_html, features="xml")
+                status = int(page_soup.find('code').string)
+                if(status != 0):
+                    msg = ""
+                    try:
+                        msg = page_soup.find('text').string
+                    except:
+                        msg = "Error with request"
+                    return HttpResponse(msg, status=status)
 
-            amenity = Amenity()
-            amenity.amenity_name = data['amenityName']
-            amenity.amenity_desc = data['amenityDescription']
-            amenity.save()
+                propertyType = page_soup.find('useCode').string
+                created = page_soup.find('last-updated').string
+                createdDate = datetime.datetime.strptime(created, '%m/%d/%Y')
+                priceString = ""
+                try:
+                    priceString = page_soup.find('amount').string
+                except: 
+                    try:   
+                        priceString = page_soup.find('zindexValue').string
+                    except:
+                        priceString = "0"
+                priceIndex = priceString.find(',')
+                if(priceIndex != -1):
+                    priceString = priceString.replace(",", "")
+                marketPrice = Decimal(priceString)
+                askingPrice = marketPrice
+                try:
+                    sqFt = int(page_soup.find('finishedSqFt').string)
+                except:
+                    sqFt = 0
+                bed = int(page_soup.find('bedrooms').string)
+                bath = page_soup.find('bathrooms').string
+                decimalPoint = bath.find('.')
+                bath = bath[:decimalPoint]
+                bathVal = int(bath)
+                description = page_soup.find('homedetails').string
+                neighborhoodName = page_soup.find('region')['name']
 
-            propAmen = Property_Amenity()
-            propAmen.property_id = propTemp
-            propAmen.amenity = amenity
-            propAmen.save()
+                try:
+                    propType = PropertyType()
+                    propType.propertyTypeName = propertyType
+                    propType.save()
+                except:
+                    propType = PropertyType.objects.get(propertyTypeName=propertyType)
+                
+                try:
+                    neighborhoodModel = Neighborhood()
+                    neighborhoodModel.neighborhood_name = neighborhoodName
+                    neighborhoodModel.save()
+                except:
+                    neighborhoodModel = Neighborhood.objects.get(neighborhood_name=neighborhoodName)
 
-            photo = Photo()
-            photo.photo_file = data['photoFile']
-            photo.save()
+                prop = Property()
+                prop.propertyAddress = page_soup.find('address').string
+                prop.propertyType = propType
+                prop.neighborhood = neighborhoodModel
+                prop.propertyCreatedDate = createdDate
+                prop.propertyMarketPrice = marketPrice
+                prop.propertyDescription = description
+                prop.propertySqFt = sqFt
+                prop.propertyBedrooms = bed
+                prop.propertyBathrooms = bathVal
+                prop.save()
 
-            propPhoto = Property_Photo()
-            propPhoto.photo_id = photo
-            propPhoto.property_id = propTemp
-            propPhoto.save()
+                owner = Ownership()
+                owner.user_id = request.user
+                owner.property_id = prop
+                owner.ownershipPaidPrice = marketPrice
+                owner.ownershipAskingPrice = askingPrice
+                owner.save()
 
-            owner = Ownership()
-            owner.user_id = request.user
-            owner.property_id = propTemp
-            owner.ownershipAskingPrice = data['ownershipAskingPrice']
-            owner.ownershipPaidPrice = data['ownershipPaidPrice']
-            owner.save()
-
-            propertyJSON = {
-                "owner":owner.user_id.username,
-                "ownerAskingPrice":owner.ownershipAskingPrice,
-                "ownerPaidPrice":owner.ownershipPaidPrice,
-                "propertyTypeName":propTemp.propertyType.propertyTypeName,
-                "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
-                "neighborhoodName":propTemp.neighborhood.neighborhood_name,
-                "neighborhoodDescription":propTemp.neighborhood.neighborhood_desc,
-                "propertyAddress":propTemp.propertyAddress,
-                "propertyCreatedDate":propTemp.propertyCreatedDate,
-                "propertyMarketPrice":propTemp.propertyMarketPrice,
-                "propertyDescription":propTemp.propertyDescription,
-                "propertySqFt":propTemp.propertySqFt,
-                "propertyBedrooms":propTemp.propertyBedrooms,
-                "propertyBathrooms":propTemp.propertyBathrooms,
-                "amenityName":amenity.amenity_name,
-                "amenityDescription":amenity.amenity_desc
-            }
-            return JsonResponse(propertyJSON, status=200)
+                return HttpResponse("Added to database", status=200)
+            else:
+                return HttpResponse("Form is not valid", status=400)
     elif request.method == 'DELETE':
         if not request.user.is_authenticated:
             return HttpResponse("Not logged in.", status=401)
@@ -181,6 +195,110 @@ def properties(request):
             prop = Property.objects.get(id=ownership.property_id.id)
             prop.delete()
         return HttpResponse("All of your properties were deleted.", status=200)
+
+
+    # if request.method == 'GET':
+    #     #Get properties user owns
+    #     if not request.user.is_authenticated:
+    #         return HttpResponse("Not logged in.", status=401)
+    #     ownProperties = Ownership.objects.filter(user_id=request.user)
+    #     propertiesList = []
+    #     for ownership in ownProperties:
+    #         prop = ownership.property_id
+    #         propertyTemp = {
+    #             "propertyType":prop.propertyType,
+    #             "neighborhood":prop.neighborhood,
+    #             "propertyAddress":prop.propertyAddress,
+    #             "propertyCreatedDate":prop.propertyCreatedDate,
+    #             "propertyMarketPrice":prop.propertyMarketPrice,
+    #             "propertyDescription":prop.propertyDescription,
+    #             "propertySqFt":prop.propertySqFt,
+    #             "propertyBedrooms":prop.propertyBedrooms,
+    #             "propertyBathrooms":prop.propertyBathrooms
+    #         }
+    #         propertiesList.append(propertyTemp)
+    #     return JsonResponse(propertiesList, safe=False, status=200)
+    # elif request.method == 'POST':
+    #     if not request.user.is_authenticated:
+    #         return HttpResponse("Not logged in.", status=401)
+    #     try:
+    #         data = json.loads(request.body.decode('utf-8'))
+    #     except json.JSONDecodeError:
+    #         return HttpResponse("Error decoding JSON file.", status=400)
+    #     else:
+
+    #         try:
+    #             propertyT = PropertyType()
+    #             propertyT.propertyTypeName = data['propertyTypeName']
+    #             propertyT.propertyTypeDescription = data['propertyTypeDescription']
+    #             propertyT.save()
+    #         #If property type already exists, then retrieve it.
+    #         except:
+    #             propertyT = PropertyType.objects.get(propertyTypeName=data['propertyTypeName'])
+    #         try:
+    #             neighborhood = Neighborhood()
+    #             neighborhood.neighborhood_name = data['neighborhoodName']
+    #             neighborhood.neighborhood_desc = data['neighborhoodDescription']
+    #             neighborhood.save()
+    #         #If neighborhood already exists, then retrieve it.
+    #         except:
+    #             neighborhood = neighborhood.objects.get(neighborhood_name=data['neighborhoodName'])
+    #         propTemp = Property()
+    #         propTemp.neighborhood = neighborhood
+    #         propTemp.propertyType = propertyT
+    #         propTemp.propertyAddress = data['propertyAddress']
+    #         propTemp.propertyMarketPrice = data['propertyMarketPrice']
+    #         propTemp.propertyDescription = data['propertyDescription']
+    #         propTemp.propertySqFt = data['propertySqFt']
+    #         propTemp.propertyBedrooms = data['propertyBedrooms']
+    #         propTemp.propertyBathrooms = data['propertyBathrooms']
+    #         propTemp.save()
+
+    #         amenity = Amenity()
+    #         amenity.amenity_name = data['amenityName']
+    #         amenity.amenity_desc = data['amenityDescription']
+    #         amenity.save()
+
+    #         propAmen = Property_Amenity()
+    #         propAmen.property_id = propTemp
+    #         propAmen.amenity = amenity
+    #         propAmen.save()
+
+    #         photo = Photo()
+    #         photo.photo_file = data['photoFile']
+    #         photo.save()
+
+    #         propPhoto = Property_Photo()
+    #         propPhoto.photo_id = photo
+    #         propPhoto.property_id = propTemp
+    #         propPhoto.save()
+
+    #         owner = Ownership()
+    #         owner.user_id = request.user
+    #         owner.property_id = propTemp
+    #         owner.ownershipAskingPrice = data['ownershipAskingPrice']
+    #         owner.ownershipPaidPrice = data['ownershipPaidPrice']
+    #         owner.save()
+
+    #         propertyJSON = {
+    #             "owner":owner.user_id.username,
+    #             "ownerAskingPrice":owner.ownershipAskingPrice,
+    #             "ownerPaidPrice":owner.ownershipPaidPrice,
+    #             "propertyTypeName":propTemp.propertyType.propertyTypeName,
+    #             "propertyTypeDescription":propTemp.propertyType.propertyTypeDescription,
+    #             "neighborhoodName":propTemp.neighborhood.neighborhood_name,
+    #             "neighborhoodDescription":propTemp.neighborhood.neighborhood_desc,
+    #             "propertyAddress":propTemp.propertyAddress,
+    #             "propertyCreatedDate":propTemp.propertyCreatedDate,
+    #             "propertyMarketPrice":propTemp.propertyMarketPrice,
+    #             "propertyDescription":propTemp.propertyDescription,
+    #             "propertySqFt":propTemp.propertySqFt,
+    #             "propertyBedrooms":propTemp.propertyBedrooms,
+    #             "propertyBathrooms":propTemp.propertyBathrooms,
+    #             "amenityName":amenity.amenity_name,
+    #             "amenityDescription":amenity.amenity_desc
+    #         }
+    #         return JsonResponse(propertyJSON, status=200)
 
 @csrf_exempt
 def specificProperty(request, property_id):
@@ -255,6 +373,7 @@ def register(request):
         form = RegistrationForm      
         return HttpResponse("Method not allowed on /auth/register.(Method Not Allowed)", status=405)
 
+@csrf_exempt
 @sensitive_post_parameters('username', 'password')
 def signin(request):
     """
