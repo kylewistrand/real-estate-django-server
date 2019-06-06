@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Cart</title>
+</head>
+
+<body>
+    <script>
+        function deleteProperty(id) {
+            let xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", "cart", false);
+            xhttp.send(id);
+            window.location.reload(false); 
+        }
+    </script>
+    <a href="/properties"><- Back to Properties</a>
+    <h1>Cart</h1>
+    {% block content %}
+    {% for property in properties %}
+    <h2>- {{property.propertyAddress}} ${{property.propertyMarketPrice}}</h2>
+    <h3>{{property.neighborhood.neighborhood_name}}</h3>
+    <h3>{{property.propertyType.propertyTypeName}}</h3>
+    <p>
+        <strong>SqFt: </strong>{{property.propertySqFt}}
+        <strong>Bedrooms: </strong>{{property.propertyBedrooms}}
+        <strong>Bathrooms: </strong>{{property.propertyBathrooms}}
+        <strong>Created: </strong>{{property.propertyCreatedDate}}
+    </p>
+    <a href={{propertyDescription}}>{{property.propertyDescription}}</a>
+    <br />
+    <button onclick="deleteProperty({{property.id}})">Remove From Cart</button>
+    {% endfor %}
+    {% endblock content %}
+    <hr />
+    <form method="post">
+        {% csrf_token %}
+        <input type="submit" value="Checkout">
+    </form>
+</body>
+
+</html>

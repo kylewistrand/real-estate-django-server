@@ -1,38 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Properties</title>
 </head>
+
 <body>
+    <a href="/cart">View my Cart</a>
+    {% block content %}
+        {% for property in properties %}
+        <h1>{{property.propertyAddress}} ${{property.propertyMarketPrice}}</h1>
+        <h3>{{property.neighborhood.neighborhood_name}}</h3>
+        <h3>{{property.propertyType.propertyTypeName}}</h3>
+        <h3>Livability Score: {{property.propertyLivability}}/100</h3>
+        <p>
+            <strong>SqFt: </strong>{{property.propertySqFt}}
+            <strong>Bedrooms: </strong>{{property.propertyBedrooms}}
+            <strong>Bathrooms: </strong>{{property.propertyBathrooms}}
+            <strong>Created: </strong>{{property.propertyCreatedDate}}
+        </p>
+        <a href={{propertyDescription}}>{{property.propertyDescription}}</a>
+        <form action="properties/{{property.id}}" method="post">
+            <button type="submit" value="{{property.id}}">Add to Cart</button>
+        </form>
+        {% endfor %}
+    {% endblock content %}
+    <hr />
     <form method="post">
         <!-- {{ signinForm }}
+                    {% csrf_token %}
+                    <br><br> -->
         {% csrf_token %}
-        <br><br> -->
-        {% csrf_token %}
-        {% block content %}
-            {% for property in properties %}
-                <h1>{{property.propertyAddress}} ${{property.propertyMarketPrice}}</h1>
-                <h3>{{property.neighborhood.neighborhood_name}}</h3>
-                <h3>{{property.propertyType.propertyTypeName}}</h3>
-                <h3>Livability Score: {{property.propertyLivability}}/100</h3>
-                <p>
-                    <strong>SqFt: </strong>{{property.propertySqFt}}
-                    <strong>Bedrooms: </strong>{{property.propertyBedrooms}}
-                    <strong>Bathrooms: </strong>{{property.propertyBathrooms}}
-                    <strong>Created: </strong>{{property.propertyCreatedDate}}
-                </p>
-                <a href={{propertyDescription}}>{{property.propertyDescription}}</a>
-            {% endfor %}
-            <hr />
-            <div>
-                <h1>Add your own listing:</h1>
-                {{form}}
-            </div>
-        {% endblock content %}
+        <div>
+            <h1>Add your own listing:</h1>
+            {{form}}
+        </div>
         <input type="submit" value="Submit">
     </form>
 </body>
+
 </html>
