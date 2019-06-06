@@ -75,9 +75,6 @@ from .scrape import getLivability
 #             coupon.delete()
 #         return HttpResponse("All coupons were deleted.", status=200)
 
-
-
-
 @csrf_exempt
 def properties(request):
     """Create a property listing, view all of your own properties, or delete all of your properties"""
