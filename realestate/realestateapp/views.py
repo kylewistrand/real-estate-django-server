@@ -5,7 +5,7 @@ Photo, Property_Photo, Amenity, Property_Amenity, Offer, Role, User_Role)
 from django.views.decorators.csrf import csrf_exempt
 import json, hashlib
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from .forms import RegistrationForm, PropertiesForm
 from datetime import datetime
 from django.views.decorators.debug import sensitive_post_parameters
@@ -439,12 +439,17 @@ def signin(request):
         if user is not None:
             login(request, user)
             # Respond after successful login
-            return HttpResponse("Login successful.", status=200)
+            return HttpResponseRedirect('/properties')
         else:
             return HttpResponse("Invalid credentials.", status=401)
     else:
         # Unsupported method
         return HttpResponse("Method not allowed on realestateapp/auth/signin.", status=405)
+
+@csrf_exempt
+def logoutPage(request):
+    logout(request)
+    return HttpResponseRedirect('signin')
 
 @csrf_exempt
 def specificUser(request, user_id):

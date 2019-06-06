@@ -9,6 +9,7 @@ urlpatterns = [
         path('properties/<property_id>', views.specificProperty, name='specificProperty'),
         path('auth/register', views.register, name='account-create'),
         path('auth/signin', views.signin, name='Signin'),
+        path('auth/logout', views.logoutPage, name='Logout'),
         path('checkout', views.checkout, name="Checkout"),
         path('offers', views.offers, name="Offers"),
         path('coupons/<coupon_id>', views.checkout, name="edit-certain-coupon"),
