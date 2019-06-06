@@ -35,22 +35,28 @@ class Neighborhood(models.Model):
     neighborhood_name = models.CharField(max_length=225, blank=False)
     neighborhood_desc = models.TextField(default="", blank=True, unique=False)
 
-class CouponType(models.Model):
-    couponTypeName = models.CharField(max_length=30, default="General", unique=True, blank=False)
-    couponTypeDescription = models.CharField(max_length=250, default="Not specified.", unique=False, blank=True)
+# class CouponType(models.Model):
+#     couponTypeName = models.CharField(max_length=30, default="General", unique=True, blank=False)
+#     couponTypeDescription = models.CharField(max_length=250, default="Not specified.", unique=False, blank=True)
 
-class Coupon(models.Model):
-    couponType = models.ForeignKey(CouponType, on_delete=models.CASCADE)
-    couponValue = models.DecimalField(decimal_places=2, max_digits=3, default=0, unique=False, null=False)
-    couponName = models.CharField(max_length=30, default="Generic", unique=True, blank=False)
-    couponDescription = models.CharField(max_length=250, default="", unique=False, blank=True)
+# class Coupon(models.Model):
+#     couponType = models.ForeignKey(CouponType, on_delete=models.CASCADE)
+#     couponValue = models.DecimalField(decimal_places=2, max_digits=3, default=0, unique=False, null=False)
+#     couponName = models.CharField(max_length=30, default="Generic", unique=True, blank=False)
+#     couponDescription = models.CharField(max_length=250, default="", unique=False, blank=True)
 
     #Will not save if coupon is not unique
-    def save(self, *args, **kwargs):
-        try:
-            super().save(*args, **kwargs)
-        except IntegrityError:
-            raise IntegrityError
+    # def save(self, *args, **kwargs):
+    #     try:
+    #         super().save(*args, **kwargs)
+    #     except IntegrityError:
+    #         raise IntegrityError
+
+# class Livability(models.Model):
+#     livability_id = models.AutoField(primary_key=True)
+#     city = models.CharField(max_length=50, blank=False)
+#     state = models.CharField(max_length=50, blank=False)
+#     score = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
 
 class PropertyType(models.Model):
     propertyTypeName = models.CharField(max_length=50, default="Unclassified", unique=True, blank=False)
@@ -66,6 +72,7 @@ class Property(models.Model):
     propertySqFt = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
     propertyBedrooms = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
     propertyBathrooms = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
+    propertyLivability = models.PositiveSmallIntegerField(default=0, unique=False, null=False)
 
     #Property is not unique, such as address
     def save(self, *args, **kwargs):
@@ -111,9 +118,8 @@ class Cart(models.Model):
 class Ownership(models.Model):
     user_id = models.ForeignKey(User, blank=False, on_delete=models.CASCADE)
     property_id = models.ForeignKey(Property, blank=False, on_delete=models.CASCADE)
-    coupon_id = models.ForeignKey(Coupon, null=True, on_delete=models.CASCADE)
+    # coupon_id = models.ForeignKey(Coupon, null=True, on_delete=models.CASCADE)
     ownershipBeginDate = models.DateTimeField(blank=False, default=datetime.datetime.now)
     ownershipEndDate = models.DateTimeField(blank=True, null=True)
     ownershipAskingPrice = models.DecimalField(max_digits=12, decimal_places=2)
     ownershipPaidPrice = models.DecimalField(max_digits=12, decimal_places=2)
-

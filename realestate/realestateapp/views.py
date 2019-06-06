@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
+from .models import (Property, PropertyType, Neighborhood, Ownership, Cart,
 Photo, Property_Photo, Amenity, Property_Amenity, Offer, Role, User_Role)
 from django.views.decorators.csrf import csrf_exempt
 import json, hashlib
@@ -14,64 +14,68 @@ from urllib.request import urlopen as uReq
 from bs4 import BeautifulSoup as soup
 from decimal import Decimal
 import datetime
+from .scrape import getLivability
 
 # Create your views here.
-@csrf_exempt
-def coupons(request):
-    """Ability to view, delete, or create coupons."""
-    if request.method == 'GET':
-        if not request.user.is_authenticated:
-            return HttpResponse("Not logged in.", status=401)
-        coupons = Coupon.objects.all()
-        couponsList = []
-        for coupon in coupons:
-            couponTemp = {
-                "couponName":coupon.couponName,
-                "couponValue":coupon.couponValue,
-                "couponDescription":coupon.couponDescription,
-                "couponTypeName":coupon.couponType.couponTypeName,
-                "couponTypeDescription":coupon.couponType.couponTypeDescription
-            }
-            couponsList.append(couponTemp)
-        return JsonResponse(couponsList, safe=False, status=200)
-    elif request.method == 'POST':
-        if not request.user.is_authenticated:
-            return HttpResponse("Not logged in.", status=401)
-        try:
-            data = json.loads(request.body.decode('utf-8'))
-        except json.JSONDecodeError:
-            return HttpResponse("Error decoding JSON file.", status=400)
-        else:
-            try:
-                couponT = CouponType()
-                couponT.couponTypeName = data['couponTypeName']
-                couponT.couponTypeDescription = data['couponTypeDescription']
-                couponT.save()
-            #If coupon type has already been made, then retrieve it.
-            except:
-                couponT = CouponType.objects.get(couponTypeName=data['couponTypeName'])
-            newCoupon = Coupon()
-            newCoupon.couponValue = data['couponValue']
-            newCoupon.couponName = data['couponName']
-            newCoupon.couponDescription = data['couponDescription']
-            newCoupon.couponType = couponT
-            newCoupon.save()
-            couponJSON = {
-                "couponName":newCoupon.couponName,
-                "couponValue":newCoupon.couponValue,
-                "couponDescription":newCoupon.couponDescription,
-                "couponTypeName":newCoupon.couponType.couponTypeName,
-                "couponTypeDescription":newCoupon.couponType.couponTypeDescription
-            }
-            return JsonResponse(couponJSON, status=200)
-    elif request.method == 'DELETE':
-        if not request.user.is_authenticated:
-            return HttpResponse("Not logged in.", status=401)
-        coupons = Coupon.objects.all()
-        #Delete all of the coupons.
-        for coupon in coupons:
-            coupon.delete()
-        return HttpResponse("All coupons were deleted.", status=200)
+# @csrf_exempt
+# def coupons(request):
+#     """Ability to view, delete, or create coupons."""
+#     if request.method == 'GET':
+#         if not request.user.is_authenticated:
+#             return HttpResponse("Not logged in.", status=401)
+#         coupons = Coupon.objects.all()
+#         couponsList = []
+#         for coupon in coupons:
+#             couponTemp = {
+#                 "couponName":coupon.couponName,
+#                 "couponValue":coupon.couponValue,
+#                 "couponDescription":coupon.couponDescription,
+#                 "couponTypeName":coupon.couponType.couponTypeName,
+#                 "couponTypeDescription":coupon.couponType.couponTypeDescription
+#             }
+#             couponsList.append(couponTemp)
+#         return JsonResponse(couponsList, safe=False, status=200)
+#     elif request.method == 'POST':
+#         if not request.user.is_authenticated:
+#             return HttpResponse("Not logged in.", status=401)
+#         try:
+#             data = json.loads(request.body.decode('utf-8'))
+#         except json.JSONDecodeError:
+#             return HttpResponse("Error decoding JSON file.", status=400)
+#         else:
+#             try:
+#                 couponT = CouponType()
+#                 couponT.couponTypeName = data['couponTypeName']
+#                 couponT.couponTypeDescription = data['couponTypeDescription']
+#                 couponT.save()
+#             #If coupon type has already been made, then retrieve it.
+#             except:
+#                 couponT = CouponType.objects.get(couponTypeName=data['couponTypeName'])
+#             newCoupon = Coupon()
+#             newCoupon.couponValue = data['couponValue']
+#             newCoupon.couponName = data['couponName']
+#             newCoupon.couponDescription = data['couponDescription']
+#             newCoupon.couponType = couponT
+#             newCoupon.save()
+#             couponJSON = {
+#                 "couponName":newCoupon.couponName,
+#                 "couponValue":newCoupon.couponValue,
+#                 "couponDescription":newCoupon.couponDescription,
+#                 "couponTypeName":newCoupon.couponType.couponTypeName,
+#                 "couponTypeDescription":newCoupon.couponType.couponTypeDescription
+#             }
+#             return JsonResponse(couponJSON, status=200)
+#     elif request.method == 'DELETE':
+#         if not request.user.is_authenticated:
+#             return HttpResponse("Not logged in.", status=401)
+#         coupons = Coupon.objects.all()
+#         #Delete all of the coupons.
+#         for coupon in coupons:
+#             coupon.delete()
+#         return HttpResponse("All coupons were deleted.", status=200)
+
+
+
 
 @csrf_exempt
 def properties(request):
@@ -125,9 +129,14 @@ def properties(request):
                 propertyType = page_soup.find('useCode').string
                 created = page_soup.find('last-updated').string
                 createdDate = datetime.datetime.strptime(created, '%m/%d/%Y')
-                priceString = ""
+                priceString = "0"
                 try:
                     priceString = page_soup.find('amount').string
+                    if priceString == None:
+                        try:   
+                            priceString = page_soup.find('zindexValue').string
+                        except:
+                            priceString = "0"
                 except: 
                     try:   
                         priceString = page_soup.find('zindexValue').string
@@ -164,6 +173,8 @@ def properties(request):
                 except:
                     neighborhoodModel = Neighborhood.objects.get(neighborhood_name=neighborhoodName)
 
+                livability = getLivability(city, state)
+
                 prop = Property()
                 prop.propertyAddress = page_soup.find('address').string
                 prop.propertyType = propType
@@ -174,6 +185,7 @@ def properties(request):
                 prop.propertySqFt = sqFt
                 prop.propertyBedrooms = bed
                 prop.propertyBathrooms = bathVal
+                prop.propertyLivability = livability
                 prop.save()
 
                 owner = Ownership()
@@ -183,7 +195,10 @@ def properties(request):
                 owner.ownershipAskingPrice = askingPrice
                 owner.save()
 
-                return HttpResponse("Added to database", status=200)
+                form = PropertiesForm()
+                properties = Property.objects.all()
+                ownerships = Ownership.objects.all()
+                return render(request, 'main/properties.html', {'form':form, 'ownerships':ownerships, 'properties':properties})
             else:
                 return HttpResponse("Form is not valid", status=400)
     elif request.method == 'DELETE':
@@ -582,18 +597,19 @@ def checkout(request):
 
     if User.is_authenticated():
         if request.method == "GET":
-            cartItems = Property.objects.all()
-            cartItemList = []
-            for cartItem in cartItems:
-                cartTemp = {
-                    "property_name":cartItem.couponName,
-                    "proptery_price":cartItem.couponValue,
-                    "property_description":cartItem.couponDescription,
-                    "property_sqfoot":cartItem.couponType.couponTypeName,
+            return HttpResponse("Not implemented", status=201)
+            # cartItems = Property.objects.all()
+            # cartItemList = []
+            # for cartItem in cartItems:
+            #     cartTemp = {
+            #         "property_name":cartItem.couponName,
+            #         "proptery_price":cartItem.couponValue,
+            #         "property_description":cartItem.couponDescription,
+            #         "property_sqfoot":cartItem.couponType.couponTypeName,
 
-                }
-                cartItem.append(cartTemp)
-            return JsonResponse(cartItemList, safe=False, status=200)
+            #     }
+            #     cartItem.append(cartTemp)
+            # return JsonResponse(cartItemList, safe=False, status=200)
     
         if request.method == "POST":
             return HttpResponse("Items Purchesed", status=201)
@@ -601,13 +617,13 @@ def checkout(request):
         if request.method == "DELETE":
             return HttpResponse("Delete cart item")
 
-def coupon_with_id(request):
-    "Allows admin user to edit, delete a certain coupon"
+# def coupon_with_id(request):
+#     "Allows admin user to edit, delete a certain coupon"
     
-    if User.is_superuser():
-        if request.method == "GET":
-            return HttpResponse("Got all coupons")
-        if request.method == "POST":
-            return HttpResponse("Made a new coupon")
-        if request.method == "DELETE":
-            return HttpResponse("Deleted a coupon")
+#     if User.is_superuser():
+#         if request.method == "GET":
+#             return HttpResponse("Got all coupons")
+#         if request.method == "POST":
+#             return HttpResponse("Made a new coupon")
+#         if request.method == "DELETE":
+#             return HttpResponse("Deleted a coupon")

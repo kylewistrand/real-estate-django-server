@@ -1,11 +1,11 @@
 from django.contrib import admin
-from .models import (CouponType, Coupon, PropertyType, Property, Neighborhood,
+from .models import (PropertyType, Property, Neighborhood,
 Offer, Photo, Property_Amenity, Property_Photo, Amenity, User_Role, UserDetail,
 Ownership, Role, Cart)
 
-# Register your models here.
-admin.site.register(CouponType)
-admin.site.register(Coupon)
+# # Register your models here.
+# admin.site.register(CouponType)
+# admin.site.register(Coupon)
 admin.site.register(PropertyType)
 admin.site.register(Property)
 admin.site.register(Neighborhood)
