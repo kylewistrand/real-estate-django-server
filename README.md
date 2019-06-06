@@ -31,14 +31,14 @@ Final project for INFO 441 (Server-Side Development) built with Django
 - GET: Form
 ###### realestate/users/<user_id> (admin authentication)
 - GET: JSON of specified user
-- PATCH: Edit user (role, description, etc)
+- PUT: Edit user (role, description, etc)
 - DELETE: Remove specific user
 ###### realestate/coupons (admin authentication)
 - POST: Create a new coupon
 - GET: List of all coupons or maybe a form if a user is logged in?
 - DELETE: Delete all coupons
 ###### realestate/coupons/<coupon_id> (admin authentication)
-- PATCH: Edit specified coupon
+- PUT: Edit specified coupon
 - DELETE: Remove specified coupon
 - GET: Retrieve JSON of specified coupon
 ###### realestate/properties (seller authentication)
@@ -58,25 +58,19 @@ Final project for INFO 441 (Server-Side Development) built with Django
 ###### realestate/offers (User authentication)
 - GET: List of all current and past offers
 - POST: Make a new offer
-- PATCH: Edit your own offer or create a counter offer
+- PUT: Edit your own offer or create a counter offer
 ###### realestate/coupons/<coupon_id> (admin authentication)
-PATCH: Edit specified coupon
-
-DELETE: Remove specified coupon
-
-GET: Retrieve JSON of specified coupon
-
+- PUT: Edit specified coupon
+- DELETE: Remove specified coupon
+- GET: Retrieve JSON of specified coupon
 ###### realestate/auth/register 
-POST: Create a new user
-
-GET: Form
+- POST: Create a new user
+- GET: Form
 
 ###### realestate/checkout (User authentication)
-GET: List of properties in cart
-
-POST: Purchase properties
-
-DELETE: Remove specified property from cart
+- GET: List of properties in cart
+-POST: Purchase properties
+- DELETE: Remove specified property from cart
 
 
 

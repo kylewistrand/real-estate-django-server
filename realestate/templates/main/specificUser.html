@@ -1,0 +1,18 @@
+<img src="{{ gravatarURL }}" alt="Gravatar">
+<ul>
+    <li>Username: {{ user.username }}</li>
+    <li>Email: {{ user.email }}</li>
+    <li>First Name: {{ user.first_name }}</li>
+    <li>Last Name: {{ user.last_name }}</li>
+</ul>
+
+<form action="{{user.id}}" method="post">
+    <select name="role">
+        {% for role in roles %}
+        <option value="{{ role.roleName }}">{{ role.roleName }}</option>
+        {% endfor %}
+    </select>
+    {% csrf_token %}
+    <br>
+    <input type="submit" value="Update Role">
+</form>
