@@ -1,0 +1,10 @@
+version: '2.1'
+
+services:
+  real-estate-django-server:
+    image: finalproject.azurecr.io/finalproject/realestate:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000

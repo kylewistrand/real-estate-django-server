@@ -1,0 +1,8 @@
+version: '2.1'
+
+services:
+  real-estate-django-server:
+    image: finalproject.azurecr.io/realestate:latest
+    build: .
+    ports:
+      - 8000:8000

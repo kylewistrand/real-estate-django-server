@@ -5,7 +5,7 @@ Photo, Property_Photo, Amenity, Property_Amenity, Offer, Role, User_Role)
 from django.views.decorators.csrf import csrf_exempt
 import json, hashlib
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from .forms import RegistrationForm, PropertiesForm
 from datetime import datetime
 from django.views.decorators.debug import sensitive_post_parameters
@@ -15,7 +15,33 @@ from bs4 import BeautifulSoup as soup
 from decimal import Decimal
 import datetime
 from .scrape import getLivability
+from rest_framework import viewsets
 
+#Import APIview for viewsets API interface
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+class PropertiesAPI(APIView):
+    def get(self, request, format=None):
+        """Returns a list of properties for sale."""
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        properties = Property.objects.exclude(id__in=Ownership.objects.filter(ownershipEndDate__isnull=True).values_list('property_id', flat=True))
+
+        propertyObjects = [{
+            'address': prop.propertyAddress,
+            'neighborhood': prop.neighborhood.neighborhood_name,
+            'type': prop.propertyType.propertyTypeName,
+            'createdDate': prop.propertyCreatedDate,
+            'marketPrice': prop.propertyMarketPrice,
+            'description': prop.propertyDescription,
+            'sqFt': prop.propertySqFt,
+            'numBedrooms': prop.propertyBedrooms,
+            'numBathrooms': prop.propertyBathrooms,
+            'livability': prop.propertyLivability
+        } for prop in properties]
+
+        return Response({'properties': propertyObjects})
 
 # Create your views here.
 # @csrf_exempt
@@ -451,12 +477,17 @@ def signin(request):
         if user is not None:
             login(request, user)
             # Respond after successful login
-            return HttpResponse("Login successful.", status=200)
+            return HttpResponseRedirect('/properties')
         else:
             return HttpResponse("Invalid credentials.", status=401)
     else:
         # Unsupported method
         return HttpResponse("Method not allowed on realestateapp/auth/signin.", status=405)
+
+@csrf_exempt
+def logoutPage(request):
+    logout(request)
+    return HttpResponseRedirect('signin')
 
 @csrf_exempt
 def specificUser(request, user_id):
