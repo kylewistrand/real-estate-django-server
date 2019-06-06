@@ -4,9 +4,10 @@ from . import views
 app_name = 'realestateapp'
 urlpatterns = [
         # path('coupons', views.coupons, name='coupons'),
-        path('properties', views.properties, name='properties'),
         path('cart', views.cart, name='cart'),
+        path('properties', views.properties, name='properties'),
         path('properties/<property_id>', views.specificProperty, name='specificProperty'),
+        path('propertiesAPI', views.PropertiesAPI.as_view(), name='properties'),
         path('auth/register', views.register, name='account-create'),
         path('auth/signin', views.signin, name='Signin'),
         path('auth/logout', views.logoutPage, name='Logout'),
