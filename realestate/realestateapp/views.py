@@ -79,7 +79,8 @@ def properties(request):
     if request.method == 'GET':
         form = PropertiesForm()
         properties = Property.objects.all()
-        return render(request, 'main/properties.html', {'form':form, 'properties':properties})
+        ownerships = Ownership.objects.all()
+        return render(request, 'main/properties.html', {'form':form, 'ownerships':ownerships, 'properties':properties})
     elif request.method == 'POST':
         if not request.user.is_authenticated:
             return HttpResponse("Not logged in", status=400)
@@ -89,7 +90,7 @@ def properties(request):
                 address = form.cleaned_data['address']
                 city = form.cleaned_data['city']
                 state = form.cleaned_data['state']
-
+                # askingPrice = 0.0
                 #Zillow reformat
                 apiId = 'X1-ZWz1h4b5dpi4nf_1k6qj'
                 addressWords = address.split()
@@ -112,16 +113,35 @@ def properties(request):
                 page_html = r.read()
                 r.close()
                 page_soup = soup(page_html, features="xml")
+                status = int(page_soup.find('code').string)
+                if(status != 0):
+                    msg = ""
+                    try:
+                        msg = page_soup.find('text').string
+                    except:
+                        msg = "Error with request"
+                    return HttpResponse(msg, status=status)
+
                 propertyType = page_soup.find('useCode').string
                 created = page_soup.find('last-updated').string
                 createdDate = datetime.datetime.strptime(created, '%m/%d/%Y')
-                priceString = page_soup.find('zindexValue').string
+                priceString = ""
+                try:
+                    priceString = page_soup.find('amount').string
+                except: 
+                    try:   
+                        priceString = page_soup.find('zindexValue').string
+                    except:
+                        priceString = "0"
                 priceIndex = priceString.find(',')
-                marketPriceString = page_soup.find('zindexValue').string
                 if(priceIndex != -1):
                     priceString = priceString.replace(",", "")
                 marketPrice = Decimal(priceString)
-                sqFt = int(page_soup.find('finishedSqFt').string)
+                askingPrice = marketPrice
+                try:
+                    sqFt = int(page_soup.find('finishedSqFt').string)
+                except:
+                    sqFt = 0
                 bed = int(page_soup.find('bedrooms').string)
                 bath = page_soup.find('bathrooms').string
                 decimalPoint = bath.find('.')
@@ -145,7 +165,7 @@ def properties(request):
                     neighborhoodModel = Neighborhood.objects.get(neighborhood_name=neighborhoodName)
 
                 prop = Property()
-                prop.address = page_soup.find('address').string
+                prop.propertyAddress = page_soup.find('address').string
                 prop.propertyType = propType
                 prop.neighborhood = neighborhoodModel
                 prop.propertyCreatedDate = createdDate
@@ -155,6 +175,13 @@ def properties(request):
                 prop.propertyBedrooms = bed
                 prop.propertyBathrooms = bathVal
                 prop.save()
+
+                owner = Ownership()
+                owner.user_id = request.user
+                owner.property_id = prop
+                owner.ownershipPaidPrice = marketPrice
+                owner.ownershipAskingPrice = askingPrice
+                owner.save()
 
                 return HttpResponse("Added to database", status=200)
             else:

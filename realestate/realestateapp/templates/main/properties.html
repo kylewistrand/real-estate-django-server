@@ -14,7 +14,7 @@
         {% csrf_token %}
         {% block content %}
             {% for property in properties %}
-                <h1>{{property.propertyAddress}} {{property.propertyMarketPrice}}</h1>
+                <h1>{{property.propertyAddress}} ${{property.propertyMarketPrice}}</h1>
                 <h3>{{property.neighborhood.neighborhood_name}}</h3>
                 <h3>{{property.propertyType.propertyTypeName}}</h3>
                 <p>

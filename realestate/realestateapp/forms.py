@@ -16,3 +16,4 @@ class PropertiesForm(forms.Form):
     address = forms.CharField(label='address', max_length=50, required=True)
     city = forms.CharField(label='city', max_length=30, required=True)
     state = forms.CharField(label='state', max_length=2, required=True)
+    # askingPrice = forms.DecimalField(label='Price', max_digits=12, decimal_places=2)
