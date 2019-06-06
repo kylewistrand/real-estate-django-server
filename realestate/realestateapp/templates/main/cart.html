@@ -9,6 +9,15 @@
 </head>
 
 <body>
+    <script>
+        function deleteProperty(id) {
+            let xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", "cart", false);
+            xhttp.send(id);
+            window.location.reload(false); 
+        }
+    </script>
+    <a href="/properties"><- Back to Properties</a>
     <h1>Cart</h1>
     {% block content %}
     {% for property in properties %}
@@ -22,6 +31,8 @@
         <strong>Created: </strong>{{property.propertyCreatedDate}}
     </p>
     <a href={{propertyDescription}}>{{property.propertyDescription}}</a>
+    <br />
+    <button onclick="deleteProperty({{property.id}})">Remove From Cart</button>
     {% endfor %}
     {% endblock content %}
     <hr />
