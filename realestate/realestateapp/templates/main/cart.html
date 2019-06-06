@@ -5,14 +5,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Properties</title>
+    <title>Cart</title>
 </head>
 
 <body>
-    <a href="/cart">View my Cart</a>
+    <script>
+        function deleteProperty(id) {
+            let xhttp = new XMLHttpRequest();
+            xhttp.open("DELETE", "cart", false);
+            xhttp.send(id);
+            window.location.reload(false); 
+        }
+    </script>
+    <a href="/properties"><- Back to Properties</a>
+    <h1>Cart</h1>
     {% block content %}
     {% for property in properties %}
-    <h1>{{property.propertyAddress}} ${{property.propertyMarketPrice}}</h1>
+    <h2>- {{property.propertyAddress}} ${{property.propertyMarketPrice}}</h2>
     <h3>{{property.neighborhood.neighborhood_name}}</h3>
     <h3>{{property.propertyType.propertyTypeName}}</h3>
     <p>
@@ -22,22 +31,14 @@
         <strong>Created: </strong>{{property.propertyCreatedDate}}
     </p>
     <a href={{propertyDescription}}>{{property.propertyDescription}}</a>
-    <form action="properties/{{property.id}}" method="post">
-        <button type="submit" value="{{property.id}}">Add to Cart</button>
-    </form>
+    <br />
+    <button onclick="deleteProperty({{property.id}})">Remove From Cart</button>
     {% endfor %}
     {% endblock content %}
     <hr />
     <form method="post">
-        <!-- {{ signinForm }}
-                    {% csrf_token %}
-                    <br><br> -->
         {% csrf_token %}
-        <div>
-            <h1>Add your own listing:</h1>
-            {{form}}
-        </div>
-        <input type="submit" value="Submit">
+        <input type="submit" value="Checkout">
     </form>
 </body>
 

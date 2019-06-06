@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect, QueryDict
 from .models import (Coupon, CouponType, Property, PropertyType, Neighborhood, Ownership, Cart,
 Photo, Property_Photo, Amenity, Property_Amenity, Offer, Role, User_Role)
 from django.views.decorators.csrf import csrf_exempt
@@ -14,6 +14,7 @@ from urllib.request import urlopen as uReq
 from bs4 import BeautifulSoup as soup
 from decimal import Decimal
 import datetime
+
 
 # Create your views here.
 @csrf_exempt
@@ -78,7 +79,7 @@ def properties(request):
     """Create a property listing, view all of your own properties, or delete all of your properties"""
     if request.method == 'GET':
         form = PropertiesForm()
-        properties = Property.objects.all()
+        properties = Property.objects.exclude(id__in=Ownership.objects.filter(ownershipEndDate__isnull=True).values_list('property_id', flat=True))
         ownerships = Ownership.objects.all()
         return render(request, 'main/properties.html', {'form':form, 'ownerships':ownerships, 'properties':properties})
     elif request.method == 'POST':
@@ -301,6 +302,36 @@ def properties(request):
     #         return JsonResponse(propertyJSON, status=200)
 
 @csrf_exempt
+def cart(request):
+    if request.method == 'GET':
+        if not request.user.is_authenticated:
+            return HttpResponse("Not logged in.", status=401)
+        properties = [cartItem.property_id for cartItem in Cart.objects.filter(cartRemovedDate__isnull=True).filter(user_id=request.user)]
+        ownerships = Ownership.objects.all()
+        return render(request, 'main/cart.html', {'ownerships':ownerships, 'properties':properties})
+    if request.method == 'DELETE':
+        propertyId = int(request.body)
+        print(propertyId)
+        Cart.objects.filter(cartRemovedDate__isnull=True).filter(user_id=request.user).filter(property_id=propertyId).update(cartRemovedDate=datetime.datetime.now())
+        return HttpResponse("Item has been deleted from the cart.", status=200)
+    if request.method == 'POST':
+        currentCart = [cartItem.property_id for cartItem in Cart.objects.filter(cartRemovedDate__isnull=True).filter(user_id=request.user)]
+        if len(currentCart) == 0:
+            return HttpResponse("Cart is empty.", status=401)
+        for prop in currentCart:
+            newOwnership = Ownership.objects.create(
+                user_id=request.user,
+                property_id=prop,
+                ownershipAskingPrice=prop.propertyMarketPrice,
+                ownershipPaidPrice=prop.propertyMarketPrice,
+            )
+
+        Cart.objects.filter(cartRemovedDate__isnull=True).filter(user_id=request.user).update(cartRemovedDate=datetime.datetime.now())
+        return HttpResponse("All items bought successfully.", status=200)
+    else:
+        return HttpResponse("Method not allowed.", status=405)
+
+@csrf_exempt
 def specificProperty(request, property_id):
     """Add property to cart, get property information, or delete specified property"""
     if request.method == 'GET':
@@ -324,12 +355,16 @@ def specificProperty(request, property_id):
     elif request.method == 'POST':
         if not request.user.is_authenticated:
             return HttpResponse("Not logged in.", status=401)
+        currentCart = [cartItem.property_id.id for cartItem in Cart.objects.filter(cartRemovedDate__isnull=True).filter(user_id=request.user)]
+
+        if int(property_id) in currentCart:
+            return HttpResponse('This property is already in your <a href="/cart">cart</a>.', status=401)
         cart = Cart()
         cart.user_id = request.user
         prop = Property.objects.get(id=property_id)
         cart.property_id = prop
         cart.save()
-        return HttpResponse("Successfully added property to your cart", status=200)
+        return HttpResponseRedirect('/cart')
     elif request.method == 'DELETE':
         if not request.user.is_authenticated:
             return HttpResponse("Not logged in.", status=401)
